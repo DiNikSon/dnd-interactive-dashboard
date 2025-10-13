@@ -2,8 +2,22 @@ import React, {useState, useEffect, useRef} from "react";
 import XXH from "xxhashjs"
 
 function hashObject(obj) {
-  const ordered = JSON.stringify(obj, Object.keys(obj).sort());
+  const ordered = JSON.stringify(sortObjectKeys(obj));
   return XXH.h64(ordered, 0xABCD).toString(16);
+}
+
+function sortObjectKeys(obj) {
+  if (Array.isArray(obj)) {
+    return obj.map(sortObjectKeys);
+  } else if (obj && typeof obj === "object" && obj.constructor === Object) {
+    return Object.keys(obj)
+      .sort()
+      .reduce((acc, key) => {
+        acc[key] = sortObjectKeys(obj[key]);
+        return acc;
+      }, {});
+  }
+  return obj;
 }
 
 export default function useLPSync(url) {
