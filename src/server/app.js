@@ -1,28 +1,37 @@
-const express = require("express");
-const path = require("path");
-const cookieParser = require("cookie-parser");
-const logger = require("morgan");
+import express, { json, urlencoded} from "express";
+import path, { join } from "path";
+import { fileURLToPath } from "url";
+import cookieParser from "cookie-parser";
+import logger from "morgan";
 
-const apiRouter = require("./routes/api");
+import apiRouter from "./routes/api.js";
+import uploadRouter from "./routes/upload.js";
+import syncRouter from "./routes/sync.js";
 
 const app = express();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 app.use(logger("dev"));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(json());
+app.use(urlencoded({ extended: false }));
 app.use(cookieParser());
 
 // mount our api router here
 app.use("/api", apiRouter);
+app.use("/upload", uploadRouter);
+app.use("/sync", syncRouter);
 
 // Serve static files from the React app
-app.use(express.static(path.join(__dirname, "../client/build")));
+app.use(express.static(join(__dirname, "../client/build/client")));
+app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 
 // The "catchall" handler: for any request that doesn't
 // match one above, send back React's index.html file.
 app.get("*", (req, res) => {
   console.log("req.path", req.path);
-  res.sendFile(path.join(__dirname + "../client/build/index.html"));
+  res.sendFile(join(__dirname, "../client/build/index.html"));
 });
 
-module.exports = app;
+export default app;
