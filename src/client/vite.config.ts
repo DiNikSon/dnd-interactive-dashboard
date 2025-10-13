@@ -8,23 +8,23 @@ export default defineConfig({
   server: {
     proxy: {
       '/sync': {
-        target: 'http://localhost:4000',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
       },
       // добавь другие API-префиксы при необходимости
       '/api': {
-        target: 'http://localhost:4000',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
       },
       '/uploads': {
-        target: 'http://localhost:4000',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
       },
       '/upload': {
-        target: 'http://localhost:4000',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
       }
