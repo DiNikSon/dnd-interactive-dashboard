@@ -37,8 +37,10 @@ node_modules/
 jspm_packages/
 
 # Public files
-public/uploads
+public/uploads/*
 public/projects
+# Except default ones
+!public/uploads/default-bg.jpg
 
 # Typescript v1 declaration files
 typings/
