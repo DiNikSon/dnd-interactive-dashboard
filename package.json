@@ -5,7 +5,6 @@
   "scripts": {
     "start": "cd src/server && npm install && npm start",
     "dev": "concurrently \"cd src/server && nodemon --openssl-legacy-provider\" \"cd src/client && npm run dev\"",
-    "dev-host": "concurrently \"cd src/server && nodemon --openssl-legacy-provider\" \"cd src/client && npm run dev --host\"",
     "logs": "heroku logs -t",
     "heroku-postbuild": "cd src/client && npm install && npm run build"
   },
