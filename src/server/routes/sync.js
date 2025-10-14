@@ -72,6 +72,8 @@ router.post("/load/:key", function(req, res, next) {
 router.put("/set/:key", function(req, res, next) {
   let key = req.params.key
   data[key] = req.body;
+  
+  console.log(key, data[key], req.body)
   for (let id in subscribers) {
     let subscriberRes = subscribers[id];
     if(subscriberRes.key !== key) continue;

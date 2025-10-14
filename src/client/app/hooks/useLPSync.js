@@ -20,9 +20,22 @@ function sortObjectKeys(obj) {
   return obj;
 }
 
-export default function useLPSync(url) {
+export default function useLPSync(subUrl, setUrl) {
   const [data, setData] = useState({});
+  const localUpdateRef = useRef(false)
   const abortRef = useRef(null);
+
+  function set(newData){
+    let updatedData = {...data, ...((typeof newData === 'function')?newData(data):newData)}
+    localUpdateRef.current = fetch(setUrl, {
+      method: 'PUT',
+      body: JSON.stringify(updatedData),
+      headers: {
+        'Content-Type': 'application/json'
+      },
+    });
+    setData(updatedData)
+  }
 
   useEffect(() => {
     const params = { t: Date.now(), hash: hashObject(data) };
@@ -31,7 +44,8 @@ export default function useLPSync(url) {
     const start = async () => {
       abortRef.current = new AbortController();
       try {
-        await subscribe(url, params, setData, console.error, abortRef.current.signal);
+        await Promise.resolve(localUpdateRef.current);
+        await subscribe(subUrl, params, setData, console.error, abortRef.current.signal);
       } catch (e) {
         console.error(e);
       }
@@ -43,9 +57,9 @@ export default function useLPSync(url) {
       // Отменяем текущий запрос при изменении data или размонтировании
       if (abortRef.current) abortRef.current.abort();
     };
-  }, [url, data]); // ✅ зависим от data, чтобы хэш пересчитывался
+  }, [subUrl, data]); // ✅ зависим от data, чтобы хэш пересчитывался
 
-  return data;
+  return [data, set];
 }
 
 async function subscribe(url, params, responseHandler, errorHandler, signal) {
