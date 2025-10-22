@@ -9,7 +9,7 @@ import { error } from "console";
 let subscribers = Object.create(null);
 let data = {
   "scene":{
-    "background":'/uploads/default-bg.jpg'
+    "background":'/src/images/default-bg.jpg'
   },
 };
 let projects = path.join(process.cwd(), "/public/projects/");

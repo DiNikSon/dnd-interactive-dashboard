@@ -26,6 +26,7 @@ app.use("/sync", syncRouter);
 // Serve static files from the React app
 app.use(express.static(join(__dirname, "../client/build/client")));
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
+app.use("/src", express.static(path.join(__dirname, "public/assets")));
 
 // The "catchall" handler: for any request that doesn't
 // match one above, send back React's index.html file.
