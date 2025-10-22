@@ -8,7 +8,7 @@ export function meta({}) {
   ];
 }
 
-export default function Dashboard() {
+export default function Scene() {
   const [data] = useLPSync("/sync/subscribe/scene","/sync/set/scene")
   const some = import.meta.env.VITE_SOME_KEY
     return <>
