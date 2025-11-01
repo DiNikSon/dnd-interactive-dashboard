@@ -61,4 +61,25 @@ router.post("/:folder", (req, res, next) => {
   });
 });
 
+// ✅ GET /:folder - список файлов в папке
+router.get("/:folder", (req, res) => {
+  const folder = req.params.folder;
+
+  if (folder.includes("..") || folder.includes("/")) {
+    return res.status(400).json({ error: "Некорректное имя папки" });
+  }
+
+  const targetDir = join(baseUploadDir, folder);
+
+  if (!fs.existsSync(targetDir)) {
+    return res.json([]); // пустой массив, если папки нет
+  }
+
+  const files = fs.readdirSync(targetDir)
+    .filter(file => fs.statSync(join(targetDir, file)).isFile())
+    .map(file => `/uploads/${folder}/${file}`);
+
+  res.json(files);
+});
+
 export default router;
