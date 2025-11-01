@@ -10,36 +10,55 @@ const router = Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Папка, где будут храниться загруженные файлы
-const uploadDir = join(__dirname, "../public/uploads");
+// Базовая директория загрузок
+const baseUploadDir = join(__dirname, "../public/uploads");
 
-// 🛠 Создаём директорию, если её нет
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// 🛠 Создаём базовую директорию, если её нет
+if (!fs.existsSync(baseUploadDir)) {
+  fs.mkdirSync(baseUploadDir, { recursive: true });
 }
 
-// Настройка хранилища
-const storage = diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    // делаем уникальное имя
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + extname(file.originalname));
-  }
-});
+// Фабрика хранилищ для разных папок
+const makeStorage = (folderName = "") =>
+  diskStorage({
+    destination: (req, file, cb) => {
+      const targetDir = join(baseUploadDir, folderName);
+      // создаём поддиректорию, если её нет
+      fs.mkdirSync(targetDir, { recursive: true });
+      cb(null, targetDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      cb(null, uniqueSuffix + extname(file.originalname));
+    },
+  });
 
-const upload = multer({ storage });
-
-// Маршрут для загрузки
-router.post("/", upload.single("image"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "Файл не получен" });
-  }
+// ✅ Маршрут по умолчанию (без папки)
+router.post("/", multer({ storage: makeStorage() }).single("file"), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "Файл не получен" });
 
   const fileUrl = `/uploads/${req.file.filename}`;
   res.json({ url: fileUrl });
+});
+
+// ✅ Маршрут с указанием папки
+router.post("/:folder", (req, res, next) => {
+  const folder = req.params.folder;
+
+  // проверка, чтобы не лезли за пределы uploadDir
+  if (folder.includes("..") || folder.includes("/")) {
+    return res.status(400).json({ error: "Некорректное имя папки" });
+  }
+
+  const upload = multer({ storage: makeStorage(folder) }).single("file");
+
+  upload(req, res, (err) => {
+    if (err) return res.status(500).json({ error: "Ошибка при загрузке", details: err.message });
+    if (!req.file) return res.status(400).json({ error: "Файл не получен" });
+
+    const fileUrl = `/uploads/${folder}/${req.file.filename}`;
+    res.json({ url: fileUrl });
+  });
 });
 
 export default router;
