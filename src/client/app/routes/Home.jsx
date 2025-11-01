@@ -2,8 +2,8 @@ import { Link } from "react-router";
 
 export function meta({}) {
   return [
-    { title: "Главное меню - DNDI" },
-    { name: "description", content: "Главное меню приложения DND-Interactive!" },
+    { title: "Главное меню | DNDI" },
+    { name: "description", content: "Главное меню приложения" },
   ];
 }
 
