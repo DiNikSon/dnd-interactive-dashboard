@@ -82,4 +82,25 @@ router.get("/:folder", (req, res) => {
   res.json(files);
 });
 
+router.delete("/:folder/:file", (req, res) => {
+  const { folder, file } = req.params;
+
+  // Проверка, чтобы не лезли за пределы uploadDir
+  if (folder.includes("..") || folder.includes("/") || file.includes("..") || file.includes("/")) {
+    return res.status(400).json({ error: "Некорректное имя папки или файла" });
+  }
+
+  const filePath = path.join(baseUploadDir, folder, file);
+
+  // Проверка, существует ли файл
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (err) return res.status(404).json({ error: "Файл не найден" });
+
+    fs.unlink(filePath, (err) => {
+      if (err) return res.status(500).json({ error: "Ошибка при удалении файла", details: err.message });
+      res.json({ message: "Файл успешно удалён" });
+    });
+  });
+});
+
 export default router;
