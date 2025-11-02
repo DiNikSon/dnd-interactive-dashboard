@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from "react-router";
+import useLPSync from "../hooks/useLPSync";
 
 export function meta() {
   return [
@@ -8,11 +9,13 @@ export function meta() {
 }
 
 export default function Dashboard() {
+  const [scene, setScene] = useLPSync("/sync/subscribe/scene", "/sync/set/scene");
+
   return (
-    <div className="min-h-screen min-w-screen bg-[url('/src/images/default-bg.jpg')] bg-cover bg-no-repeat bg-center">
-      <div className="min-h-screen min-w-screen backdrop-blur-sm flex">
-        {/* Боковая панель навигации */}
-        <aside className="h-screen w-64 bg-white/15 backdrop-blur-md border-r border-white/20 flex flex-col">
+    <div className="h-screen w-screen bg-[url('/src/images/dashboard-bg.png')] bg-auto bg-repeat-x bg-center">
+      <div className="h-full w-full backdrop-blur-xs flex"> 
+        {/* ==== Боковая панель ==== */}
+        <aside className="h-full w-64 bg-white/15 backdrop-blur-md border-r border-white/20 flex flex-col">
           {/* Заголовок */}
           <div className="p-6 border-b border-white/10 flex-shrink-0">
             <h1 className="text-2xl font-semibold text-white text-center tracking-wide">
@@ -20,7 +23,7 @@ export default function Dashboard() {
             </h1>
           </div>
 
-          {/* Прокручиваемая зона навигации */}
+          {/* Навигация с прокруткой */}
           <div
             className="
               flex-1 overflow-y-auto p-4 space-y-2
@@ -66,10 +69,20 @@ export default function Dashboard() {
           </div>
         </aside>
 
-        {/* Основная рабочая область */}
-        <main className="flex-1 flex items-center justify-center p-10 overflow-hidden">
-          <div className="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-10 w-full max-w-6xl min-h-[600px] text-white">
-            <Outlet />
+        {/* ==== Правая рабочая область ==== */}
+        <main className="flex-1 h-full p-10 overflow-hidden flex">
+          {/* Контейнер инструмента */}
+          <div
+            className="
+              bg-white/10 backdrop-blur-lg rounded-xl shadow-2xl
+              p-10 w-full text-white
+              overflow-y-auto
+              scrollbar-thin scrollbar-thumb-white/30 scrollbar-track-white/5
+              hover:scrollbar-thumb-white/50
+              scrollbar-thumb-rounded-full scrollbar-track-rounded-full
+            "
+          >
+            <Outlet context={{ scene, setScene }} />
           </div>
         </main>
       </div>
