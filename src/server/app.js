@@ -32,7 +32,7 @@ app.use("/src", express.static(path.join(__dirname, "public/assets")));
 // match one above, send back React's index.html file.
 app.get("*", (req, res) => {
   console.log("req.path", req.path);
-  res.sendFile(join(__dirname, "../client/build/index.html"));
+  res.sendFile(join(__dirname, "../client/build/client/index.html"));
 });
 
 export default app;
