@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router";
-import useLPSync from "../hooks/useLPSync";
+import useLPSync from "@/hooks/useLPSync";
 
 export function meta() {
   return [

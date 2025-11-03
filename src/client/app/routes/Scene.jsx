@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import useLPSync from "../hooks/useLPSync";
+import useLPSync from "@/hooks/useLPSync";
 
 export function meta({}) {
   return [
@@ -20,9 +20,6 @@ export default function Scene() {
         <h1 className="text-4xl font-bold text-blue-600">
           Tailwind работает! 🎉
         </h1>
-        <h2>
-          {some}
-        </h2>
       </div>
     </div>
     </>

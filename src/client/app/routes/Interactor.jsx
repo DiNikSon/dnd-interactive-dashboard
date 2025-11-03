@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import useLPSync from "../hooks/useLPSync";
+import useLPSync from "@/hooks/useLPSync";
 
 export function meta({}) {
   return [
