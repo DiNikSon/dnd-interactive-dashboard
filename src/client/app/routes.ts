@@ -5,7 +5,7 @@ export default [
     route("interactor", "routes/Interactor.jsx"),
     route("dashboard", "routes/Dashboard.jsx", [
         route("background", "routes/dashboard/ChangeBackground.jsx"),
-        route("placeholder", "routes/dashboard/PlaceholderTool.jsx"),
+        route("test", "routes/dashboard/AudioTest.jsx"),
     ]),
     route("scene", "routes/Scene.jsx"),
 ];
