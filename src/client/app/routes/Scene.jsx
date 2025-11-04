@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import useLPSync from "@/hooks/useLPSync";
+import { AudioPlayer } from "@/components/AudioPlayer";
 
 export function meta({}) {
   return [
@@ -21,6 +22,13 @@ export default function Scene() {
           Tailwind работает! 🎉
         </h1>
       </div>
+      {data.music && (
+        <AudioPlayer
+          play={data.music.play}
+          loop={data.music.loop}
+          src={data.music.src}
+        />
+      )}
     </div>
     </>
 }
