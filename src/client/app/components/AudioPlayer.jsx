@@ -5,10 +5,12 @@ import React, { useEffect, useRef, useState } from "react";
  * @param {false|number} props.play — timestamp, с которого идёт воспроизведение, или false, если не играет
  * @param {boolean} [props.loop=false] — зацикливать ли весь список
  * @param {string|string[]} props.src — один трек или массив треков
+ * @param {number|number[]|null} [props.volume=null] — громкость: null = не менять, number = одна громкость, массив = громкости по трекам
  */
-export function AudioPlayer({ play, loop = false, src }) {
+export function AudioPlayer({ play, loop = false, src, volume = null }) {
   const audioRef = useRef(null);
   const [durations, setDurations] = useState([]);
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const sources = Array.isArray(src) ? src : [src];
 
   // Предзагрузка длительностей треков
@@ -39,14 +41,13 @@ export function AudioPlayer({ play, loop = false, src }) {
     };
   }, [src]);
 
-  // Основная логика воспроизведения
+  // Основное воспроизведение
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !durations.length) return;
 
-    audio.loop = false; // мы сами управляем лупом
+    audio.loop = false;
 
-    // Если play === false — останавливаем
     if (play === false) {
       audio.pause();
       audio.currentTime = 0;
@@ -56,14 +57,13 @@ export function AudioPlayer({ play, loop = false, src }) {
     const totalDuration = durations.reduce((a, b) => a + b, 0);
     const elapsed = (Date.now() - play) / 1000;
 
-    // Если всё уже проиграно и нет лупа — стоп
     if (!loop && elapsed >= totalDuration) {
       audio.pause();
       audio.currentTime = 0;
       return;
     }
 
-    // Определяем текущий трек и смещение в нём
+    // Определяем трек и смещение
     let offset = elapsed % totalDuration;
     let trackIndex = 0;
     while (offset >= durations[trackIndex] && trackIndex < durations.length - 1) {
@@ -71,15 +71,15 @@ export function AudioPlayer({ play, loop = false, src }) {
       trackIndex++;
     }
 
+    setCurrentTrackIndex(trackIndex);
+
     const startPlayback = async (index, timeOffset) => {
       try {
         audio.src = sources[index];
 
-        // Ждём загрузки метаданных
         await new Promise((resolve) => {
-          if (isFinite(audio.duration) && audio.duration > 0) {
-            resolve(true);
-          } else {
+          if (isFinite(audio.duration) && audio.duration > 0) resolve(true);
+          else {
             const onMeta = () => {
               audio.removeEventListener("loadedmetadata", onMeta);
               resolve(true);
@@ -90,25 +90,24 @@ export function AudioPlayer({ play, loop = false, src }) {
 
         const duration = isFinite(audio.duration) ? audio.duration : 0;
         const safeOffset = Math.max(0, Math.min(timeOffset, duration));
-
         audio.currentTime = safeOffset;
+
         await audio.play();
       } catch (err) {
         console.warn("Audio play failed:", err);
       }
     };
 
-    // Воспроизводим первый нужный трек
     startPlayback(trackIndex, offset);
 
-    // Переход к следующему треку после окончания
     const handleEnded = async () => {
-      trackIndex++;
-      if (trackIndex >= sources.length) {
-        if (loop) trackIndex = 0;
-        else return; // конец
+      let nextIndex = trackIndex + 1;
+      if (nextIndex >= sources.length) {
+        if (loop) nextIndex = 0;
+        else return;
       }
-      await startPlayback(trackIndex, 0);
+      setCurrentTrackIndex(nextIndex);
+      await startPlayback(nextIndex, 0);
     };
 
     audio.addEventListener("ended", handleEnded);
@@ -117,6 +116,23 @@ export function AudioPlayer({ play, loop = false, src }) {
       audio.removeEventListener("ended", handleEnded);
     };
   }, [play, loop, src, durations]);
+
+  // 💡 Отдельный эффект для обновления громкости без перезапуска
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (volume == null) return;
+
+    let v = 1;
+    if (typeof volume === "number") {
+      v = volume;
+    } else if (Array.isArray(volume)) {
+      v = volume[currentTrackIndex] ?? 1;
+    }
+
+    audio.volume = Math.max(0, Math.min(1, v));
+  }, [volume, currentTrackIndex]);
 
   return <audio ref={audioRef} preload="auto" />;
 }
