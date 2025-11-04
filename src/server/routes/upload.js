@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer, { diskStorage } from "multer";
-import { join, extname } from "path";
+import { join, extname, basename } from "path";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -19,17 +19,40 @@ if (!fs.existsSync(baseUploadDir)) {
 }
 
 // Фабрика хранилищ для разных папок
+
 const makeStorage = (folderName = "") =>
   diskStorage({
     destination: (req, file, cb) => {
       const targetDir = join(baseUploadDir, folderName);
-      // создаём поддиректорию, если её нет
       fs.mkdirSync(targetDir, { recursive: true });
       cb(null, targetDir);
     },
     filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      cb(null, uniqueSuffix + extname(file.originalname));
+      const targetDir = join(baseUploadDir, folderName);
+      const customName = req.query?.name;
+      const originalExt = extname(file.originalname);
+
+      let baseName;
+      let finalExt;
+
+      if (customName) {
+        finalExt = extname(customName) || originalExt;
+        baseName = basename(customName, extname(customName));
+      } else {
+        baseName = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        finalExt = originalExt;
+      }
+
+      // Проверка занятости файла
+      let candidate = `${baseName}${finalExt}`;
+      let counter = 2;
+
+      while (fs.existsSync(join(targetDir, candidate))) {
+        candidate = `${baseName}-${counter}${finalExt}`;
+        counter++;
+      }
+
+      cb(null, candidate);
     },
   });
 
