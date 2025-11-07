@@ -10,8 +10,10 @@
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
     "express": "~4.16.1",
+    "get-audio-duration": "^4.0.1",
     "morgan": "~1.9.1",
     "multer": "^2.0.2",
+    "music-metadata": "^11.9.0",
     "xxhashjs": "^0.2.2"
   }
 }

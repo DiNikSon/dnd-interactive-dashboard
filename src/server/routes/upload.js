@@ -4,6 +4,7 @@ import { join, extname, basename } from "path";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import { getAudioDurationInSeconds } from "get-audio-duration"
 
 const router = Router();
 
@@ -83,6 +84,39 @@ router.post("/:folder", (req, res, next) => {
     res.json({ url: fileUrl });
   });
 });
+
+// ✅ GET /audio/:folder - список аудио с длительностью
+router.get("/audio/:folder", async (req, res) => {
+  const folder = req.params.folder;
+
+  if (folder.includes("..") || folder.includes("/")) {
+    return res.status(400).json({ error: "Некорректное имя папки" });
+  }
+
+  const targetDir = join(baseUploadDir, folder);
+  if (!fs.existsSync(targetDir)) return res.json({});
+
+  const files = fs.readdirSync(targetDir)
+    .filter(file => fs.statSync(join(targetDir, file)).isFile());
+
+  const result = {};
+
+  await Promise.all(
+    files.map(async (file) => {
+      const filePath = join(targetDir, file);
+      try {
+        const duration = await getAudioDurationInSeconds(filePath);
+        const url = `/uploads/${folder}/${file}`;
+        result[url] = Math.round(duration * 1000) / 1000; // округлим
+      } catch {
+        result[`/uploads/${folder}/${file}`] = 0;
+      }
+    })
+  );
+
+  res.json(result);
+});
+
 
 // ✅ GET /:folder - список файлов в папке
 router.get("/:folder", (req, res) => {
