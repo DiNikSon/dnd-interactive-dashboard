@@ -50,7 +50,7 @@ export default function Dashboard() {
             </NavLink>
 
             <NavLink
-              to="test"
+              to="soundpad"
               className={({ isActive }) =>
                 `block px-4 py-2 rounded-lg text-sm font-medium transition ${
                   isActive
@@ -59,7 +59,7 @@ export default function Dashboard() {
                 }`
               }
             >
-              🧰 Тест
+              🧰 Саундпад
             </NavLink>
           </div>
 
