@@ -9,8 +9,8 @@ import { error } from "console";
 let subscribers = Object.create(null);
 let data = {
   "scene":{
-    "background":'/src/images/default-bg.jpg'
-  },
+    "background":'/src/images/default-bg.jpg',
+  }
 };
 let projects = path.join(process.cwd(), "/public/projects/");
 
@@ -29,7 +29,9 @@ function exists(path) {
 
 router.get("/subscribe/:key", function(req, res, next) {
   let key = req.params.key
-  let value = data[key]
+  let value = key.includes('+')?
+  Object.fromEntries(key.split('+').map(k=>[k,data[k]])):
+  data[key]
   if(!value){
     res.json(null)
     return
@@ -73,7 +75,6 @@ router.put("/set/:key", function(req, res, next) {
   let key = req.params.key
   data[key] = req.body;
   
-  console.log(key, data[key], req.body)
   for (let id in subscribers) {
     let subscriberRes = subscribers[id];
     if(subscriberRes.key !== key) continue;
