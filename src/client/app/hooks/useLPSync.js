@@ -75,7 +75,7 @@ function useLPSyncMulti(subUrl, setUrl, keys) {
 
   function set(newData, key){
     let updatedData = {...data}
-    updatedData[key] =  {...updatedData[key], ...((typeof newData === 'function')?newData(data):newData)}
+    updatedData[key] =  {...updatedData[key], ...((typeof newData === 'function')?newData(updatedData[key]):newData)}
     localUpdateRef.current = fetch(setUrl + key, {
       method: 'PUT',
       body: JSON.stringify(updatedData[key]),

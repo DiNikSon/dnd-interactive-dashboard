@@ -19,9 +19,11 @@ function getOrCreateToken() {
 }
 
 export default function Interactor() {
-  const [data] = useLPSync("/sync/subscribe/scene", "/sync/set/scene");
-  const [charsData] = useLPSync("/sync/subscribe/characters", "/sync/set/characters");
-  const [notifications, setNotifications] = useLPSync("/sync/subscribe/notifications", "/sync/set/notifications");
+  const [data, , charsData, , notifications, setNotifications] = useLPSync(
+    "/sync/subscribe/",
+    "/sync/set/",
+    ["scene", "characters", "notifications"]
+  );
   const characters = charsData?.list || [];
 
   const [token] = useState(() => getOrCreateToken());

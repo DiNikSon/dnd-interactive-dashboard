@@ -31,11 +31,18 @@ function exists(path) {
   return fs.existsSync(path)
 }
 
+function valueForKey(key) {
+  return key.includes('+')
+    ? Object.fromEntries(key.split('+').map(k => [k, data[k]]))
+    : data[key];
+}
+
 export function notifySubscribers(key) {
   for (let id in subscribers) {
     const sub = subscribers[id];
-    if (sub.key !== key) continue;
-    sub.res.json(data[key]);
+    const subKeys = sub.key.split('+');
+    if (!subKeys.includes(key)) continue;
+    sub.res.json(valueForKey(sub.key));
     delete subscribers[id];
   }
 }
@@ -49,9 +56,7 @@ export function persistProject() {
 router.get("/subscribe/:key", function(req, res, next) {
   let key = req.params.key
   let token = req.query.token || null
-  let value = key.includes('+')?
-  Object.fromEntries(key.split('+').map(k=>[k,data[k]])):
-  data[key]
+  let value = valueForKey(key)
   if(!value){
     res.json(null)
     return
@@ -93,7 +98,7 @@ router.post("/load/:key", function(req, res, next) {
   }
   for (let id in subscribers) {
     let subscriberRes = subscribers[id];
-    subscriberRes.res.json(data[subscriberRes.key]);
+    subscriberRes.res.json(valueForKey(subscriberRes.key));
     delete subscribers[id];
   }
   res.json(data);
@@ -105,8 +110,8 @@ router.put("/set/:key", function(req, res, next) {
 
   for (let id in subscribers) {
     let subscriberRes = subscribers[id];
-    if(subscriberRes.key !== key) continue;
-    subscriberRes.res.json(data[key]);
+    if(!subscriberRes.key.split('+').includes(key)) continue;
+    subscriberRes.res.json(valueForKey(subscriberRes.key));
     delete subscribers[id];
   }
   if(data.project){

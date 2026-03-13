@@ -11,8 +11,11 @@ export function meta({}) {
 }
 
 export default function Scene() {
-  const [data] = useLPSync("/sync/subscribe/scene", "/sync/set/scene");
-  const [notifications, setNotifications] = useLPSync("/sync/subscribe/notifications", "/sync/set/notifications");
+  const [data, , notifications, setNotifications] = useLPSync(
+    "/sync/subscribe/",
+    "/sync/set/",
+    ["scene", "notifications"]
+  );
   const [muted, setMuted] = useState(true);
 
   const closeNotif = () =>
