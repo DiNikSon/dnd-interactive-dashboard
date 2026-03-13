@@ -7,6 +7,7 @@ import defaultProject from "../public/projects/default.json" with { type: 'json'
 
 export let subscribers = Object.create(null);
 export let data = {
+  "project": null,
   "scene":{
     "background":'/src/images/default-bg.jpg',
   },
@@ -17,19 +18,19 @@ export let data = {
 };
 export let sessions = {}; // { token: { characterId: string|null, connected: boolean } }
 
-let projects = path.join(process.cwd(), "/public/projects/");
+let projectsDir = path.join(process.cwd(), "/public/projects/");
 
-function readFile(path) {
-  const data = fs.readFileSync(path, "utf-8");
-  return JSON.parse(data);
+function readFile(filePath) {
+  const content = fs.readFileSync(filePath, "utf-8");
+  return JSON.parse(content);
 }
 
-function writeFile(path, data) {
-  fs.writeFileSync(path, JSON.stringify(sortObjectKeys(data), null, 2), "utf-8");
+function writeFile(filePath, fileData) {
+  fs.writeFileSync(filePath, JSON.stringify(sortObjectKeys(fileData), null, 2), "utf-8");
 }
 
-function exists(path) {
-  return fs.existsSync(path)
+function exists(filePath) {
+  return fs.existsSync(filePath)
 }
 
 function valueForKey(key) {
@@ -51,19 +52,25 @@ export function notifySubscribers(key) {
 export function persistProject() {
   if (!data.project) return;
   const { project, ...noProjectData } = data;
-  writeFile(`${projects}${data.project}.json`, noProjectData);
+  writeFile(`${projectsDir}${data.project}.json`, noProjectData);
 }
+
+router.get("/projects", function(_req, res) {
+  const files = fs.readdirSync(projectsDir).filter(f => f.endsWith('.json') && f !== 'default.json');
+  res.json(files.map(f => f.replace('.json', '')));
+});
 
 router.get("/subscribe/:key", function(req, res, next) {
   let key = req.params.key
   let token = req.query.token || null
   let value = valueForKey(key)
-  if(!value){
+  // undefined means key doesn't exist at all — return null immediately
+  if(value === undefined){
     res.json(null)
     return
   }
   let hash = hashObject(value)
-  if(hash!==req.query.hash){
+  if(hash !== req.query.hash){
     res.json(value)
     return
   }
@@ -91,11 +98,11 @@ router.get("/subscribe/:key", function(req, res, next) {
 
 router.post("/load/:key", function(req, res, next) {
   let key = req.params.key
-  let fileData = readFile(`${projects}${key}.json`)
+  let fileData = readFile(`${projectsDir}${key}.json`)
   data = {
     ...defaultProject,
     ...fileData,
-    project:key,
+    project: key,
   }
   for (let id in subscribers) {
     let subscriberRes = subscribers[id];
@@ -117,7 +124,7 @@ router.put("/set/:key", function(req, res, next) {
   }
   if(data.project){
     const {project, ...noProjectData} = data
-    writeFile(`${projects}${data.project}.json`, noProjectData)
+    writeFile(`${projectsDir}${data.project}.json`, noProjectData)
   }
   res.end('OK');
 });
@@ -128,16 +135,22 @@ router.post("/new", function(req, res, next) {
     return
   }
   let projectName = req.body.name.toLowerCase().split(' ').join('-')
-  if(exists(`${projects}${projectName}.json`)){
+  if(exists(`${projectsDir}${projectName}.json`)){
     res.status(400).json({code: 'name_already_exists', message: 'Name already exists'})
     return
   }
+  const { name, ...rest } = req.body;
   data = {
     ...defaultProject,
-    ...req.body
+    ...rest,
+    project: projectName,
   };
-  writeFile(`${projects}${projectName}.json`, data)
-  data.project = "projectName"
+  writeFile(`${projectsDir}${projectName}.json`, data)
+  for (let id in subscribers) {
+    let subscriberRes = subscribers[id];
+    subscriberRes.res.json(valueForKey(subscriberRes.key));
+    delete subscribers[id];
+  }
   res.end(projectName);
 });
 
