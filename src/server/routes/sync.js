@@ -10,7 +10,8 @@ let subscribers = Object.create(null);
 let data = {
   "scene":{
     "background":'/src/images/default-bg.jpg',
-  }
+  },
+  "playlists": {"items": []}
 };
 let projects = path.join(process.cwd(), "/public/projects/");
 

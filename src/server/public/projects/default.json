@@ -1,6 +1,7 @@
 {
+    "name": "Default",
+    "playlists": {"items": []},
     "scene": {
         "background": "/src/images/default-bg.jpg"
-    },
-    "name": "Default"
+    }
 }
