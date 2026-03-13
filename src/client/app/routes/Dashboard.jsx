@@ -37,6 +37,19 @@ export default function Dashboard() {
             "
           >
             <NavLink
+              to="characters"
+              className={({ isActive }) =>
+                `block px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  isActive
+                    ? "bg-white/30 text-white shadow"
+                    : "text-white/80 hover:text-white hover:bg-white/10"
+                }`
+              }
+            >
+              🧙 Персонажи
+            </NavLink>
+
+            <NavLink
               to="background"
               className={({ isActive }) =>
                 `block px-4 py-2 rounded-lg text-sm font-medium transition ${

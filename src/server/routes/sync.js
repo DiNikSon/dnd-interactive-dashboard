@@ -4,15 +4,17 @@ const router = Router();
 import fs from "fs";
 import path from "path";
 import defaultProject from "../public/projects/default.json" with { type: 'json' };
-import { error } from "console";
 
-let subscribers = Object.create(null);
-let data = {
+export let subscribers = Object.create(null);
+export let data = {
   "scene":{
     "background":'/src/images/default-bg.jpg',
   },
-  "playlists": {"items": []}
+  "playlists": {"items": []},
+  "characters": {"list": []},
 };
+export let sessions = {}; // { token: { characterId: string|null, connected: boolean } }
+
 let projects = path.join(process.cwd(), "/public/projects/");
 
 function readFile(path) {
@@ -28,8 +30,24 @@ function exists(path) {
   return fs.existsSync(path)
 }
 
+export function notifySubscribers(key) {
+  for (let id in subscribers) {
+    const sub = subscribers[id];
+    if (sub.key !== key) continue;
+    sub.res.json(data[key]);
+    delete subscribers[id];
+  }
+}
+
+export function persistProject() {
+  if (!data.project) return;
+  const { project, ...noProjectData } = data;
+  writeFile(`${projects}${data.project}.json`, noProjectData);
+}
+
 router.get("/subscribe/:key", function(req, res, next) {
   let key = req.params.key
+  let token = req.query.token || null
   let value = key.includes('+')?
   Object.fromEntries(key.split('+').map(k=>[k,data[k]])):
   data[key]
@@ -51,8 +69,16 @@ router.get("/subscribe/:key", function(req, res, next) {
 
   subscribers[id] = {res, key};
 
+  if (token) {
+    if (!sessions[token]) sessions[token] = { characterId: null, connected: false };
+    sessions[token].connected = true;
+  }
+
   req.on('close', function() {
     delete subscribers[id];
+    if (token && sessions[token]) {
+      sessions[token].connected = false;
+    }
   });
 });
 
@@ -75,12 +101,11 @@ router.post("/load/:key", function(req, res, next) {
 router.put("/set/:key", function(req, res, next) {
   let key = req.params.key
   data[key] = req.body;
-  
+
   for (let id in subscribers) {
     let subscriberRes = subscribers[id];
     if(subscriberRes.key !== key) continue;
     subscriberRes.res.json(data[key]);
-    // После ответа удаляем подписчика
     delete subscribers[id];
   }
   if(data.project){

@@ -7,6 +7,7 @@ import logger from "morgan";
 import apiRouter from "./routes/api.js";
 import uploadRouter from "./routes/upload.js";
 import syncRouter from "./routes/sync.js";
+import playersRouter from "./routes/players.js";
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use(cookieParser());
 app.use("/api", apiRouter);
 app.use("/upload", uploadRouter);
 app.use("/sync", syncRouter);
+app.use("/players", playersRouter);
 
 // Serve static files from the React app
 app.use(express.static(join(__dirname, "../client/build/client")));
