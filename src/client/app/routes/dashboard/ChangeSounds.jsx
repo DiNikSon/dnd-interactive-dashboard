@@ -12,22 +12,18 @@ export default function ChangeSounds() {
   // ===========================
   // Fetch sounds
   // ===========================
-  useEffect(() => {
-    const fetchSounds = async () => {
-      try {
-        const res = await fetch("/upload/audio/sounds/");
-        const data = await res.json();
-        const entries = Object.entries(data).map(([url, duration]) => ({
-          url,
-          duration,
-        }));
-        setSounds(entries);
-      } catch (err) {
-        console.error("Ошибка при загрузке звуков:", err);
-      }
-    };
-    fetchSounds();
+  const fetchSounds = async () => {
+    try {
+      const res = await fetch("/upload/audio/sounds/");
+      const data = await res.json();
+      setSounds(Object.entries(data).map(([url, duration]) => ({ url, duration })));
+    } catch (err) {
+      console.error("Ошибка при загрузке звуков:", err);
+    }
+  };
 
+  useEffect(() => {
+    fetchSounds();
     return () => {
       Object.values(timeoutsRef.current).forEach(clearTimeout);
     };
@@ -77,7 +73,6 @@ export default function ChangeSounds() {
 
       // только если не loop и есть длительность
       if (!loop && remaining > 0) {
-        console.log(remaining)
         timeoutsRef.current[src] = setTimeout(() => {
           stopSound(src);
         }, remaining);
@@ -165,9 +160,7 @@ export default function ChangeSounds() {
       );
       const data = await res.json();
 
-      if (data.url) {
-        setSounds((prev) => [{ url: data.url, duration: 0 }, ...prev]);
-      }
+      if (data.url) await fetchSounds();
     } catch (err) {
       console.error("Ошибка при загрузке звука:", err);
       alert("Ошибка при загрузке звука");
