@@ -1,6 +1,7 @@
 {
     "characters": {"list": []},
     "name": "Default",
+    "notifications": {"scene": null, "players": {}},
     "playlists": {"items": []},
     "scene": {
         "background": "/src/images/default-bg.jpg"

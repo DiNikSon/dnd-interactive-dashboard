@@ -7,6 +7,7 @@ export default [
         route("characters", "routes/dashboard/Characters.jsx"),
         route("background", "routes/dashboard/ChangeBackground.jsx"),
         route("soundpad", "routes/dashboard/ChangeSounds.jsx"),
+        route("notification", "routes/dashboard/Notification.jsx"),
         route("music", "routes/dashboard/ChangeMusic.jsx"),
     ]),
     route("scene", "routes/Scene.jsx"),

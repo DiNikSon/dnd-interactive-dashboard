@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import useLPSync from "@/hooks/useLPSync";
 import { AudioPlayer } from "@/components/AudioPlayer";
+import { NotificationModal } from "@/components/NotificationModal";
 
 export function meta({}) {
   return [
@@ -10,22 +11,24 @@ export function meta({}) {
 }
 
 export default function Scene() {
-  const [data] = useLPSync("/sync/subscribe/scene","/sync/set/scene")
-  const [muted, setMuted] = useState(true)
-  const some = import.meta.env.VITE_SOME_KEY
-    return <>
-    <div 
-      style={{'--image-url': `${data.background && 'url('+data.background+')'}`}} 
+  const [data] = useLPSync("/sync/subscribe/scene", "/sync/set/scene");
+  const [notifications, setNotifications] = useLPSync("/sync/subscribe/notifications", "/sync/set/notifications");
+  const [muted, setMuted] = useState(true);
+
+  const closeNotif = () =>
+    setNotifications((prev) => ({ ...prev, scene: null }));
+
+  return <>
+    <div
+      style={{ '--image-url': `${data.background && 'url(' + data.background + ')'}` }}
       className="min-h-screen min-w-screen bg-[image:var(--image-url)] bg-cover bg-no-repeat"
     >
-      <div className="min-h-screen min-w-screen backdrop-blur-xs flex items-center justify-center ">
-        <Audio muted={muted} setMuted={setMuted} sounds={data.sounds}/>
-        <h1 className="text-4xl font-bold text-blue-600">
-          Tailwind работает! 🎉
-        </h1>
+      <div className="min-h-screen min-w-screen backdrop-blur-xs flex items-center justify-center">
+        <Audio muted={muted} setMuted={setMuted} sounds={data.sounds} />
       </div>
     </div>
-    </>
+    <NotificationModal notification={notifications?.scene} onClose={closeNotif} closable={false} large />
+  </>
 }
 
 function Audio({muted, setMuted, sounds}){

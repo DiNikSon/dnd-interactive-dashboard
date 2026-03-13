@@ -12,6 +12,7 @@ export let data = {
   },
   "playlists": {"items": []},
   "characters": {"list": []},
+  "notifications": {"scene": null, "players": {}},
 };
 export let sessions = {}; // { token: { characterId: string|null, connected: boolean } }
 
