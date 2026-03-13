@@ -9,6 +9,7 @@ export default [
         route("soundpad", "routes/dashboard/ChangeSounds.jsx"),
         route("notification", "routes/dashboard/Notification.jsx"),
         route("music", "routes/dashboard/ChangeMusic.jsx"),
+        route("initiative", "routes/dashboard/Initiative.jsx"),
     ]),
     route("scene", "routes/Scene.jsx"),
 ];

@@ -13,6 +13,7 @@ export let data = {
   "playlists": {"items": []},
   "characters": {"list": []},
   "notifications": {"scene": null, "players": {}},
+  "initiative": {"participants": [], "currentTurnId": null, "inCombat": false, "round": 1},
 };
 export let sessions = {}; // { token: { characterId: string|null, connected: boolean } }
 

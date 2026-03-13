@@ -11,10 +11,10 @@ export function meta({}) {
 }
 
 export default function Scene() {
-  const [data, , notifications, setNotifications] = useLPSync(
+  const [data, , notifications, setNotifications, initiativeData] = useLPSync(
     "/sync/subscribe/",
     "/sync/set/",
-    ["scene", "notifications"]
+    ["scene", "notifications", "initiative"]
   );
   const [muted, setMuted] = useState(true);
 
@@ -28,14 +28,77 @@ export default function Scene() {
     >
       <div className="min-h-screen min-w-screen backdrop-blur-xs flex items-center justify-center">
         <Audio muted={muted} setMuted={setMuted} sounds={data.sounds} />
+        {data.initiativeActive && initiativeData && (
+          <InitiativeWidget initiative={initiativeData} />
+        )}
       </div>
     </div>
     <NotificationModal notification={notifications?.scene} onClose={closeNotif} closable={false} large />
   </>
 }
 
+function getInitials(name) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+function InitiativeWidget({ initiative }) {
+  const { participants = [], currentTurnId, round } = initiative;
+  const sorted = [...participants].sort((a, b) => b.initiative - a.initiative);
+
+  return (
+    <div className="bg-black/60 backdrop-blur-md rounded-2xl p-[2vw] w-[50vw] text-white space-y-2" style={{ fontSize: "1.6vw" }}>
+      <div className="flex items-center justify-between gap-4 text-sm text-white/50 mb-1">
+        <span className="font-semibold text-white">Инициатива</span>
+        <span>Раунд {round}</span>
+      </div>
+      {sorted.map((p) => {
+        const isCurrent = p.id === currentTurnId;
+        const bg =
+          p.type === "enemy"
+            ? "#ef4444"
+            : p.type === "ally"
+            ? "#22c55e"
+            : p.color || "#6366f1";
+        const label =
+          p.type === "enemy" ? String(p.enemyNumber || "") : getInitials(p.name);
+        return (
+          <div
+            key={p.id}
+            className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition ${
+              p.able === false
+                ? "opacity-35"
+                : isCurrent
+                ? "bg-yellow-500/30 ring-1 ring-yellow-400/50"
+                : ""
+            }`}
+            style={{ fontSize: "1.4vw" }}
+          >
+            {isCurrent && <span className="text-yellow-400 text-xs">▶</span>}
+            <div
+              className="rounded-full flex items-center justify-center font-bold text-white flex-shrink-0"
+              style={{ backgroundColor: bg, width: "2vw", height: "2vw", fontSize: "0.8vw" }}
+            >
+              {label}
+            </div>
+            <span className={`flex-1 ${isCurrent ? "text-yellow-200 font-semibold" : "text-white/80"}`}>
+              {p.type === "enemy" ? `${p.name} №${p.enemyNumber}` : p.name}
+            </span>
+            <span className="text-white/40" style={{ fontSize: "1.2vw" }}>{p.initiative}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function Audio({muted, setMuted, sounds}){
-  const soundsArray = sounds?(Array.isArray(sounds)?sounds:[sounds]):null 
+  const soundsArray = sounds?(Array.isArray(sounds)?sounds:[sounds]):null
   return <>
     <div className="absolute top-3 right-3 size-16" onClick={()=>setMuted(m=>!m)}>
       {

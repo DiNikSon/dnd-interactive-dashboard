@@ -1,5 +1,6 @@
 {
     "characters": {"list": []},
+    "initiative": {"participants": [], "currentTurnId": null, "inCombat": false, "round": 1},
     "name": "Default",
     "notifications": {"scene": null, "players": {}},
     "playlists": {"items": []},
