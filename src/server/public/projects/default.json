@@ -6,5 +6,15 @@
     "playlists": {"items": []},
     "scene": {
         "background": "/src/images/default-bg.jpg"
+    },
+    "widgets": {
+        "topLeft": null,
+        "topCenter": null,
+        "topRight": null,
+        "middleLeft": null,
+        "middleRight": null,
+        "bottomLeft": null,
+        "bottomCenter": null,
+        "bottomRight": null
     }
 }

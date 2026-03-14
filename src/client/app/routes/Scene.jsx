@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import useLPSync from "@/hooks/useLPSync";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { NotificationModal } from "@/components/NotificationModal";
+import { WidgetOverlay } from "@/components/WidgetOverlay";
 
 export function meta({}) {
   return [
@@ -11,10 +12,10 @@ export function meta({}) {
 }
 
 export default function Scene() {
-  const [data, , notifications, setNotifications, initiativeData] = useLPSync(
+  const [data, , notifications, setNotifications, initiativeData, , widgets] = useLPSync(
     "/sync/subscribe/",
     "/sync/set/",
-    ["scene", "notifications", "initiative"]
+    ["scene", "notifications", "initiative", "widgets"]
   );
   const [muted, setMuted] = useState(true);
 
@@ -33,6 +34,7 @@ export default function Scene() {
         )}
       </div>
     </div>
+    <WidgetOverlay widgets={widgets} />
     <NotificationModal notification={notifications?.scene} onClose={closeNotif} closable={false} large />
   </>
 }

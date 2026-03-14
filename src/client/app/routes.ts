@@ -10,6 +10,7 @@ export default [
         route("notification", "routes/dashboard/Notification.jsx"),
         route("music", "routes/dashboard/ChangeMusic.jsx"),
         route("initiative", "routes/dashboard/Initiative.jsx"),
+        route("widgets", "routes/dashboard/Widgets.jsx"),
     ]),
     route("scene", "routes/Scene.jsx"),
 ];

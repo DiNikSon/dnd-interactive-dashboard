@@ -15,6 +15,7 @@ export let data = {
   "characters": {"list": []},
   "notifications": {"scene": null, "players": {}},
   "initiative": {"participants": [], "currentTurnId": null, "inCombat": false, "round": 1},
+  "widgets": {"topLeft":null,"topCenter":null,"topRight":null,"middleLeft":null,"middleRight":null,"bottomLeft":null,"bottomCenter":null,"bottomRight":null},
 };
 export let sessions = {}; // { token: { characterId: string|null, connected: boolean } }
 
