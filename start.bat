@@ -15,6 +15,7 @@ if not errorlevel 1 (
         echo Освобождаю порт 3000 ^(PID %%p^)...
         taskkill /PID %%p /F >nul 2>&1
     )
+    timeout /t 1 /nobreak >nul
 )
 
 cd /d "%~dp0src\server"
