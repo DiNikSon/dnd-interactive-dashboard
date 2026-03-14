@@ -12,10 +12,22 @@ echo.
 node --version >nul 2>&1
 if errorlevel 1 (
     echo [ОШИБКА] Node.js не установлен!
-    echo Скачай с https://nodejs.org и запусти setup.bat снова.
+    echo Скачай Node.js 22 LTS с https://nodejs.org и запусти setup.bat снова.
     pause
     exit /b 1
 )
+
+:: Проверяем версию Node.js (нужен v22+)
+for /f "tokens=1 delims=." %%v in ('node -e "process.stdout.write(process.version.slice(1))"') do set NODE_MAJOR=%%v
+if %NODE_MAJOR% LSS 22 (
+    echo [ОШИБКА] Node.js v22+ обязателен. У тебя установлена версия:
+    node --version
+    echo Скачай Node.js 22 LTS с https://nodejs.org
+    pause
+    exit /b 1
+)
+echo Найден Node.js:
+node --version
 
 echo [1/4] Установка зависимостей сервера...
 cd src\server
