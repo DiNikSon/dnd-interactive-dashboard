@@ -135,7 +135,9 @@ export default function Initiative() {
   // Combat flow
   // ===========================
   const sendTurnNotifications = (participant, roundNum) => {
-    const title = `Ход: ${participant.name}`;
+    const title = participant.type === "enemy"
+      ? `Ход: ${participant.name} №${participant.enemyNumber}`
+      : `Ход: ${participant.name}`;
     const text = `Раунд ${roundNum}`;
     const now = Date.now();
 

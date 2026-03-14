@@ -152,8 +152,14 @@ export default function Dashboard() {
           </div>
 
           {/* Футер */}
-          <div className="p-4 border-t border-white/10 text-xs text-white/60 text-center flex-shrink-0">
-            v1.0.0 • Tools Panel
+          <div className="p-4 border-t border-white/10 flex-shrink-0 space-y-2">
+            <button
+              onClick={() => fetch("/sync/unload", { method: "POST" })}
+              className="w-full px-3 py-1.5 bg-white/5 hover:bg-white/15 rounded-lg text-xs text-white/50 hover:text-white/80 transition"
+            >
+              ← Сменить проект
+            </button>
+            <p className="text-xs text-white/30 text-center">v1.0.0 • Tools Panel</p>
           </div>
         </aside>
 

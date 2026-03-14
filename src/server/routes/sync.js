@@ -130,6 +130,16 @@ router.put("/set/:key", function(req, res, next) {
   res.end('OK');
 });
 
+router.post("/unload", function(_req, res) {
+  data.project = null;
+  for (let id in subscribers) {
+    let subscriberRes = subscribers[id];
+    subscriberRes.res.json(valueForKey(subscriberRes.key));
+    delete subscribers[id];
+  }
+  res.end('OK');
+});
+
 router.post("/new", function(req, res, next) {
   if(!req.body.name){
     res.status(400).json({code: 'no_name_provided', message: 'No name provided'})

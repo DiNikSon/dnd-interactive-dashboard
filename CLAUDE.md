@@ -10,7 +10,7 @@ Full-stack web app для проведения D&D сессий. Три роли
 
 Все три клиента синхронизируются через сервер в реальном времени.
 
-## Планируемые функции
+## Статус функций
 
 ### Сцена
 | Функция | Статус |
@@ -18,8 +18,11 @@ Full-stack web app для проведения D&D сессий. Три роли
 | Смена фона | ✅ готово |
 | Загрузка ассетов | ✅ готово |
 | Саунд (звуковые эффекты) | ✅ готово |
-| Музыка (плейлисты) | planned — см. ниже |
-| Инициатива | planned |
+| Музыка (плейлисты) | ✅ готово |
+| Инициатива (трекер) | ✅ готово |
+| Показ изображения по центру | ✅ готово |
+| Виджеты по краям экрана (QR и др.) | ✅ готово |
+| Уведомления | ✅ готово |
 | Отсчёт времени | planned |
 | Редактор и генератор иконок | planned |
 | Карта с квестами | planned |
@@ -27,24 +30,53 @@ Full-stack web app для проведения D&D сессий. Три роли
 | Менеджмент состояний | planned |
 | Стили уведомлений | planned |
 
-### Система игроков (костяк)
+### Система игроков
 | Функция | Статус |
 |---|---|
-| Список персонажей (имя + инициатива) | planned |
-| Выбор персонажа в интракторе | planned |
-| Токен игрока (localStorage, автовосстановление) | planned |
-| Цвет персонажа | planned |
-| Онлайн-статус в дэшборде | planned |
-| Принудительное освобождение персонажа (ГМ) | planned |
-
-### Интерактор
-| Функция | Статус |
-|---|---|
+| Список персонажей (имя, бонус инициативы, цвет, вкл/выкл) | ✅ готово |
+| Выбор персонажа в интракторе | ✅ готово |
+| Токен игрока (localStorage, автовосстановление) | ✅ готово |
+| Цвет персонажа | ✅ готово |
+| Принудительное освобождение персонажа (ГМ) | ✅ готово |
+| Онлайн-статус в дэшборде | removed (ненадёжно) |
 | Чат | planned |
 | Менеджмент ресурсов | planned |
 | Интерактивные проверки | planned |
 | Описание заклинаний | planned |
 | База знаний | planned |
+
+### Дэшборд — инструменты
+| Инструмент | Статус |
+|---|---|
+| 🎨 Смена фона | ✅ готово |
+| 🧰 Саундпад | ✅ готово |
+| 🎵 Музыка | ✅ готово |
+| 🧙 Персонажи | ✅ готово |
+| 🔔 Уведомление | ✅ готово |
+| ⚔️ Инициатива | ✅ готово |
+| 🖼 Изображение | ✅ готово |
+| 🖼️ Виджеты | ✅ готово |
+
+## Выбор проекта
+
+При старте, если проект не выбран (`data.project === null`), дэшборд показывает `ProjectPicker` вместо интерфейса. Проекты хранятся как JSON-файлы в `public/projects/`. Кнопка "Сменить проект" в футере сайдбара вызывает `POST /sync/unload`, после чего сервер возвращает `data.project = null` и все подписчики получают обновление.
+
+## Центральный виджет сцены (`scene.active`)
+
+`scene.active` — строка, определяет что показывается в центре сцены:
+- `"initiative"` — трекер инициативы
+- `"image"` — выбранное изображение (`scene.activeImage`)
+- `null` — ничего
+
+Только один инструмент может быть активен одновременно. При включении одного другой автоматически отключается.
+
+## Виджеты по краям (`widgets`)
+
+8 слотов: `topLeft`, `topCenter`, `topRight`, `middleLeft`, `middleRight`, `bottomLeft`, `bottomCenter`, `bottomRight`.
+
+Каждый слот: `{ type: "qr", visible: true, title: "...", url: "..." }` или `null`.
+
+На сцене рендерятся через `WidgetOverlay` (`z-40`), ниже уведомлений (`z-50`). QR-код генерируется локально через `qrcode.react`.
 
 ## Спецификация: Музыка
 
@@ -55,46 +87,26 @@ Full-stack web app для проведения D&D сессий. Три роли
 
 ### Структура данных
 
-**Плейлисты** хранятся в проекте (в JSON-файле проекта):
+**Плейлисты** хранятся в проекте:
 ```json
 {
-  "playlists": [
-    { "id": "uuid", "name": "Боевой", "tracks": ["/uploads/music/track1.mp3", "..."] },
-    { "id": "uuid", "name": "Спокойный", "tracks": ["..."] }
-  ]
+  "playlists": {
+    "items": [
+      { "id": "uuid", "name": "Боевой", "tracks": ["/uploads/music/track1.mp3"] }
+    ]
+  }
 }
 ```
 
 **Объект музыки в `scene.sounds`:**
 ```json
-{
-  "id": "music",
-  "src": ["...shuffled or original track URLs..."],
-  "loop": false,
-  "play": 1234567890,
-  "volume": 0.8
-}
+{ "id": "music", "src": ["..."], "loop": true, "play": 1234567890, "volume": 0.8 }
 ```
 
-### Управление (дэшборд)
-
-**Менеджер плейлистов:**
-- Создание / удаление плейлистов с названием
-- Загрузка треков в плейлист, задание порядка
-- Папка для загрузки: `/uploads/music/`
-
-**Управление воспроизведением:**
-- Выбор активного плейлиста → заменяет `src` в объекте `id: "music"`
-- Play / Stop
-- **Next track** — сдвиг `play` timestamp так, чтобы пропустить текущий трек (на основе длительностей)
-- **Shuffle** — перемешивает треки в `src` на сервере и сбрасывает `play` на текущее время; все клиенты получают уже перемешанный порядок через sync
-- Громкость
-
-### Что уже готово
-- `AudioPlayer` поддерживает `src` как массив и последовательное воспроизведение
-- Инфраструктура загрузки файлов (`/upload/:folder`)
-- Длительности треков (`GET /upload/audio/:folder`)
-- Синхронизация через `scene.sounds`
+### Управление
+- Play / Stop / Pause / Resume / Next track / Shuffle
+- Shuffle перемешивает на сервере, все клиенты получают уже перемешанный порядок
+- Next track — сдвиг `play` timestamp на основе длительностей треков
 
 ## Architecture
 
@@ -102,65 +114,66 @@ Full-stack web app для проведения D&D сессий. Три роли
 dnd-interactive/
 ├── src/
 │   ├── client/     # React Router v7 + Vite + TailwindCSS (port 5173 in dev)
-│   └── server/     # Express.js API + file storage (port 3000)
-├── Dockerfile
-└── package.json    # Root scripts for dev/build/deploy
+│   └── server/     # Express.js API + file storage (port 3000+)
+├── _redist/        # Node.js installer для Windows
+├── setup.bat       # Первичная настройка (deps, build, firewall)
+├── start.bat       # Запуск сервера
+└── package.json
 ```
 
 ### Frontend (`src/client/`)
 - **Framework:** React Router v7 (file-based routing, SSR disabled / SPA mode)
 - **Build:** Vite 7, TypeScript (strict), TailwindCSS v4
+- **Node.js:** v22+ обязателен (Vite 7 требует `crypto.hash`)
 - **Path alias:** `@/` → `./app/`
 - **Routes:**
   - `/` — home menu
-  - `/scene` — сцена на большом экране (только отображение)
-  - `/interactor` — интерактор для игроков (взаимодействие с игрой)
+  - `/scene` — сцена
+  - `/interactor` — интерактор игроков
   - `/dashboard` — панель ГМ
-    - `/dashboard/background` — управление фонами
-    - `/dashboard/soundpad` — управление аудио
+    - `background` / `soundpad` / `music` / `characters` / `notification` / `initiative` / `image` / `widgets`
 
 ### Backend (`src/server/`)
 - **Framework:** Express.js 4
 - **Storage:** file-based (JSON projects in `public/projects/`, uploads in `public/uploads/`)
 - **Key API routes:**
-  - `GET/PUT /sync/subscribe/:key` — long-polling for real-time state sync
-  - `POST /sync/load/:key` — load a project
-  - `PUT /sync/set/:key` — update scene state
-  - `POST /sync/new` — create project
-  - `POST /upload/:folder` — upload file
-  - `GET /upload/audio/:folder` — list audio files with durations
-  - `DELETE /upload/:folder/:file` — delete file
+  - `GET /sync/subscribe/:key` — long-polling (multi-key через `+`, напр. `scene+notifications`)
+  - `PUT /sync/set/:key` — обновить ключ
+  - `POST /sync/load/:key` — загрузить проект
+  - `POST /sync/unload` — выгрузить проект (вернуть к выбору)
+  - `POST /sync/new` — создать проект
+  - `GET /sync/projects` — список проектов
+  - `POST /upload/:folder` — загрузить файл
+  - `GET /upload/audio/:folder` — список аудио с длительностями
+  - `DELETE /upload/:folder/:file` — удалить файл
 
 ### Real-time Sync
-Custom long-polling via `/sync` endpoint. Hash-based change detection (xxhashjs). Frontend uses `useLPSync` hook. No WebSockets.
+Custom long-polling. Hash-based change detection (xxhashjs XXH64). Frontend — `useLPSync` hook (single и multi-key). No WebSockets.
+
+Multi-key пример: `useLPSync("/sync/subscribe/", "/sync/set/", ["scene", "notifications"])` — 1 соединение вместо 2. Важно из-за лимита браузера 6 connections/host.
+
+### Лимит соединений
+- Сцена: подписывается на `["scene", "notifications", "initiative", "widgets"]` — 1 соединение
+- Дашборд: подписывается на `["scene", "project"]` + каждый инструмент может добавлять свои — обычно 2-3 итого
+- Интерактор: подписывается на `["scene", "characters", "notifications"]` — 1 соединение
 
 ## Dev Setup
 
 ```bash
-# Install deps (first time)
 cd src/client && npm install
 cd src/server && npm install
-
-# Run both servers concurrently
-npm run dev   # from project root
+npm run dev   # from project root (concurrently)
 ```
 
-Frontend proxies `/sync`, `/api`, `/uploads`, `/upload`, `/src` to backend (configured in `vite.config.ts`).
+Frontend proxies `/sync`, `/api`, `/uploads`, `/upload`, `/src`, `/players` to backend.
 
-## Build & Deploy
+## Windows Deploy
 
-```bash
-# Production build (client)
-cd src/client && npm run build
-
-# Start server (serves built client + API)
-cd src/server && npm start
-
-# Heroku (auto)
-npm run heroku-postbuild
 ```
-
-Docker: multi-stage build, Node 20 Alpine.
+setup.bat   # Первый запуск: проверяет Node v22+, ставит из _redist если нужно,
+            # npm install, build, открывает порты 3000-3009 в файрволе
+start.bat   # Запуск: ищет свободный порт с 3000, устанавливает PORT=, стартует сервер
+```
 
 ## Key Commands
 
@@ -174,4 +187,4 @@ No test suite currently.
 
 ## Node Version
 
-`20.19.5` (see `.nvmrc`). Use `nvm use` before running commands.
+v22+ (see `.nvmrc`). `crypto.randomUUID()` не работает по HTTP (только HTTPS/localhost) — используй `generateUUID()` из `@/utils/uuid.js`.
