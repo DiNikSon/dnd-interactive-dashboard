@@ -1,16 +1,15 @@
 @echo off
-chcp 65001 >nul
 
 :: ── Авто-повышение до администратора ─────────────────────────────────────────
 >nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
 if '%errorlevel%' NEQ '0' (
-    echo Запрашиваю права администратора...
     echo Set UAC = CreateObject("Shell.Application") > "%temp%\dndi_elevate.vbs"
     echo UAC.ShellExecute "%~f0", "", "%~dp0", "runas", 1 >> "%temp%\dndi_elevate.vbs"
     "%temp%\dndi_elevate.vbs"
     del "%temp%\dndi_elevate.vbs" >nul 2>&1
     exit /b
 )
+chcp 65001 >nul
 :: Запущен с правами администратора — устанавливаем рабочую директорию
 cd /d "%~dp0"
 :: ─────────────────────────────────────────────────────────────────────────────
