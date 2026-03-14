@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useOutletContext } from "react-router";
 import useLPSync from "@/hooks/useLPSync";
+import { generateUUID } from "@/utils/uuid.js";
 
 const COLORS = [
   "#e74c3c", "#e67e22", "#f1c40f", "#2ecc71",
@@ -42,7 +43,7 @@ export default function Characters() {
       saveChars([
         ...characters,
         {
-          id: crypto.randomUUID(),
+          id: generateUUID(),
           name: form.name.trim(),
           initiative: Number(form.initiative),
           color: form.color,

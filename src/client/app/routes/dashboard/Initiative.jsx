@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useOutletContext } from "react-router";
 import useLPSync from "@/hooks/useLPSync";
+import { generateUUID } from "@/utils/uuid.js";
 
 function getInitials(name) {
   return name
@@ -49,7 +50,7 @@ export default function Initiative() {
     for (let i = 0; i < count; i++) {
       maxNum++;
       newOnes.push({
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         name: form.name.trim(),
         initiativeBonus: bonus,
         initiative: 10 + bonus,
@@ -70,7 +71,7 @@ export default function Initiative() {
       participants: [
         ...participants,
         {
-          id: crypto.randomUUID(),
+          id: generateUUID(),
           name: char.name,
           initiativeBonus: char.initiative,
           initiative: 10 + char.initiative,
@@ -141,12 +142,12 @@ export default function Initiative() {
     setNotifications((prev) => {
       const newNotifs = { ...prev };
       // Scene notification — 2s, not closable
-      newNotifs.scene = { id: crypto.randomUUID(), title, text, timer: 2, createdAt: now };
+      newNotifs.scene = { id: generateUUID(), title, text, timer: 2, createdAt: now };
       // Player notification — 5s, closable
       if (participant.type === "player" && participant.characterId) {
         newNotifs.players = {
           ...(prev.players || {}),
-          [participant.characterId]: { id: crypto.randomUUID(), title, text, timer: 5, createdAt: now },
+          [participant.characterId]: { id: generateUUID(), title, text, timer: 5, createdAt: now },
         };
       }
       return newNotifs;

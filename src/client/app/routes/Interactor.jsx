@@ -1,6 +1,7 @@
 import { useState } from "react";
 import useLPSync from "@/hooks/useLPSync";
 import { NotificationModal } from "@/components/NotificationModal";
+import { generateUUID } from "@/utils/uuid.js";
 
 export function meta() {
   return [
@@ -12,7 +13,7 @@ export function meta() {
 function getOrCreateToken() {
   let token = localStorage.getItem("dndi_player_token");
   if (!token) {
-    token = crypto.randomUUID();
+    token = generateUUID();
     localStorage.setItem("dndi_player_token", token);
   }
   return token;

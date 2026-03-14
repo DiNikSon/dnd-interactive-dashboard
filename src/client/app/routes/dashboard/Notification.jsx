@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useOutletContext } from "react-router";
 import useLPSync from "@/hooks/useLPSync";
+import { generateUUID } from "@/utils/uuid.js";
 
 export default function Notification() {
   useOutletContext();
@@ -24,7 +25,7 @@ export default function Notification() {
     if (!title.trim() && !text.trim()) return;
 
     const notif = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       title: title.trim(),
       text: text.trim(),
       timer: (isScene || timerEnabled) ? Number(timer) : null,

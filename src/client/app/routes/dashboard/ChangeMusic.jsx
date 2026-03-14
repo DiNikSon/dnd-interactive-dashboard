@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router";
 import useLPSync from "@/hooks/useLPSync";
+import { generateUUID } from "@/utils/uuid.js";
 
 export default function ChangeMusic() {
   const { scene, setScene } = useOutletContext();
@@ -51,7 +52,7 @@ export default function ChangeMusic() {
   const createPlaylist = () => {
     if (!newPlaylistName.trim()) return;
     const newPlaylist = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name: newPlaylistName.trim(),
       tracks: [],
     };
