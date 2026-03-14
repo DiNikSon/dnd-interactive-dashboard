@@ -69,12 +69,13 @@ if errorlevel 1 goto :error
 cd ..\..
 
 echo.
-echo [4/4] Открытие порта 3000 в брандмауэре...
+echo [4/4] Открытие портов 3000-3009 в брандмауэре...
 netsh advfirewall firewall show rule name="DNDI" >nul 2>&1
 if errorlevel 1 (
-    netsh advfirewall firewall add rule name="DNDI" dir=in action=allow protocol=TCP localport=3000
+    netsh advfirewall firewall add rule name="DNDI" dir=in action=allow protocol=TCP localport=3000-3009
 ) else (
-    echo      Правило уже существует, пропускаем.
+    netsh advfirewall firewall set rule name="DNDI" new localport=3000-3009
+    echo      Правило обновлено.
 )
 
 echo.
