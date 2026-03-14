@@ -11,6 +11,7 @@ export default [
         route("music", "routes/dashboard/ChangeMusic.jsx"),
         route("initiative", "routes/dashboard/Initiative.jsx"),
         route("widgets", "routes/dashboard/Widgets.jsx"),
+        route("image", "routes/dashboard/ShowImage.jsx"),
     ]),
     route("scene", "routes/Scene.jsx"),
 ];

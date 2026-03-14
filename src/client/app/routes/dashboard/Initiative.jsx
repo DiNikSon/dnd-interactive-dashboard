@@ -160,7 +160,7 @@ export default function Initiative() {
     if (ableParticipants.length === 0) return;
     const first = ableParticipants[0];
     saveInitiative({ inCombat: true, currentTurnId: first.id, round: 1 });
-    setScene((prev) => ({ ...prev, initiativeActive: true }));
+    setScene((prev) => ({ ...prev, active: "initiative" }));
     sendTurnNotifications(first, 1);
   };
 
@@ -186,13 +186,13 @@ export default function Initiative() {
 
   const endCombat = () => {
     saveInitiative({ inCombat: false, currentTurnId: null, round: 1 });
-    setScene((prev) => ({ ...prev, initiativeActive: false }));
+    setScene((prev) => ({ ...prev, active: null }));
   };
 
   const resetTracker = () => {
     if (!confirm("Очистить трекер инициативы?")) return;
     saveInitiative({ participants: [], currentTurnId: null, inCombat: false, round: 1 });
-    setScene((prev) => ({ ...prev, initiativeActive: false }));
+    setScene((prev) => ({ ...prev, active: null }));
   };
 
   // ===========================
@@ -224,8 +224,8 @@ export default function Initiative() {
           <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
             <input
               type="checkbox"
-              checked={!!scene?.initiativeActive}
-              onChange={(e) => setScene((prev) => ({ ...prev, initiativeActive: e.target.checked }))}
+              checked={scene?.active === "initiative"}
+              onChange={(e) => setScene((prev) => ({ ...prev, active: e.target.checked ? "initiative" : null }))}
               className="w-4 h-4 accent-yellow-400"
             />
             <span className="text-white/70">На сцене</span>

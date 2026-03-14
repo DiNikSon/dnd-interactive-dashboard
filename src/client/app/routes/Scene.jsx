@@ -29,8 +29,15 @@ export default function Scene() {
     >
       <div className="min-h-screen min-w-screen backdrop-blur-xs flex items-center justify-center">
         <Audio muted={muted} setMuted={setMuted} sounds={data.sounds} />
-        {data.initiativeActive && initiativeData && (
+        {data.active === "initiative" && initiativeData && (
           <InitiativeWidget initiative={initiativeData} />
+        )}
+        {data.active === "image" && data.activeImage && (
+          <img
+            src={data.activeImage}
+            alt=""
+            className="max-h-[75vh] max-w-[75vw] rounded-xl shadow-2xl object-contain"
+          />
         )}
       </div>
     </div>
