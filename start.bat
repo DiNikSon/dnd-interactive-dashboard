@@ -8,17 +8,20 @@ echo ║          DNDI — Запуск сервера       ║
 echo ╚══════════════════════════════════════╝
 echo.
 
-:: Освобождаем порт 3000 если занят
-netstat -ano 2>nul | findstr ":3000 " | findstr "LISTENING" >nul 2>&1
+:: Ищем свободный порт начиная с 3000
+set PORT=3000
+:find_port
+netstat -ano 2>nul | findstr ":%PORT% " | findstr "LISTENING" >nul 2>&1
 if not errorlevel 1 (
-    for /f "tokens=5" %%p in ('netstat -ano 2^>nul ^| findstr ":3000 " ^| findstr "LISTENING"') do (
-        echo Освобождаю порт 3000 ^(PID %%p^)...
-        taskkill /PID %%p /F >nul 2>&1
-    )
-    timeout /t 1 /nobreak >nul
+    echo Порт %PORT% занят, пробую следующий...
+    set /a PORT=%PORT%+1
+    goto find_port
 )
+echo Использую порт %PORT%.
+echo.
 
 cd /d "%~dp0src\server"
+set PORT=%PORT%
 node ./bin/www
 
 echo.
