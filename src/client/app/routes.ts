@@ -12,6 +12,8 @@ export default [
         route("initiative", "routes/dashboard/Initiative.jsx"),
         route("widgets", "routes/dashboard/Widgets.jsx"),
         route("image", "routes/dashboard/ShowImage.jsx"),
+        route("maps", "routes/dashboard/Maps.jsx"),
+        route("quests", "routes/dashboard/Quests.jsx"),
     ]),
     route("scene", "routes/Scene.jsx"),
 ];

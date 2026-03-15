@@ -149,6 +149,32 @@ export default function Dashboard() {
             >
               ⚔️ Инициатива
             </NavLink>
+
+            <NavLink
+              to="maps"
+              className={({ isActive }) =>
+                `block px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  isActive
+                    ? "bg-white/30 text-white shadow"
+                    : "text-white/80 hover:text-white hover:bg-white/10"
+                }`
+              }
+            >
+              🗺 Карта
+            </NavLink>
+
+            <NavLink
+              to="quests"
+              className={({ isActive }) =>
+                `block px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  isActive
+                    ? "bg-white/30 text-white shadow"
+                    : "text-white/80 hover:text-white hover:bg-white/10"
+                }`
+              }
+            >
+              📜 Задания
+            </NavLink>
           </div>
 
           {/* Футер */}

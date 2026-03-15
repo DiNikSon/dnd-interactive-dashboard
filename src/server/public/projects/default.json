@@ -16,5 +16,7 @@
         "bottomLeft": null,
         "bottomCenter": null,
         "bottomRight": null
-    }
+    },
+    "maps": {"items": []},
+    "quests": {"items": []}
 }

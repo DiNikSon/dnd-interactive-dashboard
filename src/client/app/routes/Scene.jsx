@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import useLPSync from "@/hooks/useLPSync";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { NotificationModal } from "@/components/NotificationModal";
 import { WidgetOverlay } from "@/components/WidgetOverlay";
+import { MARKER_TYPES, getVisibleQuests } from "@/utils/questMap.js";
+import SimpleMarkdown from "@/components/SimpleMarkdown.jsx";
 
 export function meta({}) {
   return [
@@ -12,10 +14,10 @@ export function meta({}) {
 }
 
 export default function Scene() {
-  const [data, , notifications, setNotifications, initiativeData, , widgets] = useLPSync(
+  const [data, , notifications, setNotifications, initiativeData, , widgets, , mapsData, , questsData] = useLPSync(
     "/sync/subscribe/",
     "/sync/set/",
-    ["scene", "notifications", "initiative", "widgets"]
+    ["scene", "notifications", "initiative", "widgets", "maps", "quests"]
   );
   const [muted, setMuted] = useState(true);
 
@@ -41,9 +43,108 @@ export default function Scene() {
         )}
       </div>
     </div>
+    {data.active === "map" && data.activeMapId && (
+      <MapDisplay
+        mapId={data.activeMapId}
+        maps={mapsData?.items || []}
+        quests={questsData?.items || []}
+        showCompleted={!!data.showCompletedOnMap}
+      />
+    )}
     <WidgetOverlay widgets={widgets} />
+    {data.activeQuestId && (() => {
+      const q = (questsData?.items || []).find(x => x.id === data.activeQuestId);
+      return q ? <QuestPopup quest={q} /> : null;
+    })()}
     <NotificationModal notification={notifications?.scene} onClose={closeNotif} closable={false} large />
   </>
+}
+
+function QuestPopup({ quest }) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-[45] pointer-events-none">
+      <div
+        className="pointer-events-none text-white"
+        style={{
+          width: "44vw",
+          minHeight: "28vh",
+          maxHeight: "65vh",
+          padding: "3vw 3.5vw",
+          background: "linear-gradient(160deg, #1a120a 0%, #0e0a06 100%)",
+          border: "1px solid rgba(180,130,60,0.45)",
+          borderRadius: "1.2vw",
+          boxShadow: "0 0 60px rgba(180,100,20,0.25), 0 4px 40px rgba(0,0,0,0.7)",
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ borderBottom: "1px solid rgba(180,130,60,0.25)", paddingBottom: "1vw", marginBottom: "1.2vw" }}>
+          <h2 style={{ fontSize: "2.2vw", fontWeight: 700, letterSpacing: "0.03em", color: "#e8c97a" }}>
+            {quest.title}
+          </h2>
+        </div>
+        {quest.description && (
+          <SimpleMarkdown text={quest.description} className="text-white/75" style={{ fontSize: "1.35vw", lineHeight: 1.6 }} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MapDisplay({ mapId, maps, quests, showCompleted }) {
+  const map = maps.find((m) => m.id === mapId);
+  const [size, setSize] = useState(null);
+
+  if (!map?.imageUrl) return null;
+
+  const visibleQuests = getVisibleQuests(quests);
+  const mapQuests = visibleQuests.filter((q) => q.mapId === mapId && q.visibility === "map" && (showCompleted || !q.completed));
+
+  const onLoad = (e) => {
+    const img = e.target;
+    const scale = Math.min(window.innerWidth / img.naturalWidth, window.innerHeight / img.naturalHeight);
+    setSize({ width: img.naturalWidth * scale, height: img.naturalHeight * scale });
+  };
+
+  return (
+    <div className="fixed inset-0 z-10 flex items-center justify-center">
+      <div className="relative" style={size ? { width: size.width, height: size.height } : {}}>
+        <img
+          src={map.imageUrl}
+          alt={map.name}
+          onLoad={onLoad}
+          style={{ display: "block", width: size?.width, height: size?.height }}
+        />
+        {size && mapQuests.map((q) => {
+          const mtype = MARKER_TYPES[q.markerType] || MARKER_TYPES.point;
+          return (
+            <div
+              key={q.id}
+              style={{
+                position: "absolute",
+                left: `${(q.mapX || 0) * 100}%`,
+                top: `${(q.mapY || 0) * 100}%`,
+                transform: "translate(-50%, -50%)",
+                opacity: q.completed ? 0.4 : 1,
+              }}
+            >
+              <div
+                className="rounded-full flex items-center justify-center text-white font-bold shadow-lg"
+                style={{
+                  backgroundColor: mtype.color,
+                  border: "2px solid rgba(255,255,255,0.4)",
+                  width: "2.5vw",
+                  height: "2.5vw",
+                  fontSize: "1.2vw",
+                }}
+              >
+                {mtype.symbol}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function getInitials(name) {
