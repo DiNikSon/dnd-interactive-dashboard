@@ -23,12 +23,13 @@ export default function Quests() {
   const [tab, setTab] = useState("all");
   const [editQuest, setEditQuest] = useState(null); // null | quest object (new has no id)
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [expandedId, setExpandedId] = useState(null);
 
   const filtered = quests.filter((q) => {
     if (tab === "active") return !q.completed;
     if (tab === "done") return q.completed;
     return true;
-  });
+  }).sort((a, b) => (a.completed ? 1 : 0) - (b.completed ? 1 : 0));
 
   const openAdd = () =>
     setEditQuest({
@@ -125,56 +126,84 @@ export default function Quests() {
           )}
           {filtered.map((q) => {
             const vis = VISIBILITY_LABELS[q.visibility] || VISIBILITY_LABELS.hidden;
+            const isExpanded = expandedId === q.id;
             return (
               <div
                 key={q.id}
-                className="flex items-center gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl transition"
+                className="bg-white/5 hover:bg-white/10 rounded-xl transition overflow-hidden"
               >
-                <input
-                  type="checkbox"
-                  checked={!!q.completed}
-                  onChange={() => handleToggleCompleted(q)}
-                  className="w-4 h-4 flex-shrink-0"
-                />
-                <span
-                  className={`flex-1 text-sm font-medium ${
-                    q.completed ? "line-through text-white/40" : ""
-                  }`}
+                {/* Строка */}
+                <div
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer"
+                  onClick={() => setExpandedId(isExpanded ? null : q.id)}
                 >
-                  {q.title || "Без названия"}
-                </span>
-                <span
-                  className={`px-2 py-0.5 rounded text-xs flex-shrink-0 ${vis.color}`}
-                >
-                  {vis.label}
-                </span>
-                {!q.completed && (
-                  <button
-                    onClick={() => handleComplete(q)}
-                    className="px-2 py-1 bg-green-600/30 hover:bg-green-600/60 text-green-300 rounded text-xs transition flex-shrink-0"
+                  <input
+                    type="checkbox"
+                    checked={!!q.completed}
+                    onChange={(e) => { e.stopPropagation(); handleToggleCompleted(q); }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-4 h-4 flex-shrink-0"
+                  />
+                  <span
+                    className={`flex-1 text-sm font-medium ${
+                      q.completed ? "line-through text-white/40" : ""
+                    }`}
                   >
-                    Завершить
+                    {q.title || "Без названия"}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded text-xs flex-shrink-0 ${vis.color}`}>
+                    {vis.label}
+                  </span>
+                  {!q.completed && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleComplete(q); }}
+                      className="px-2 py-1 bg-green-600/30 hover:bg-green-600/60 text-green-300 rounded text-xs transition flex-shrink-0"
+                    >
+                      Завершить
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); const isActive = scene?.activeQuestId === q.id; setScene((prev) => ({ ...prev, activeQuestId: isActive ? null : q.id })); }}
+                    className={`px-2 py-1 rounded text-xs transition flex-shrink-0 ${scene?.activeQuestId === q.id ? "bg-green-600/60 text-green-200" : "bg-white/10 hover:bg-white/20"}`}
+                  >
+                    {scene?.activeQuestId === q.id ? "✓ Сцена" : "На сцене"}
                   </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openEdit(q); }}
+                    className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded text-xs transition flex-shrink-0"
+                  >
+                    Изменить
+                  </button>
+                  <span className={`text-white/30 text-xs transition-transform ${isExpanded ? "rotate-180" : ""}`}>▼</span>
+                </div>
+                {/* Раскрытое описание */}
+                {isExpanded && (
+                  <div className="px-4 pb-4 pt-1 border-t border-white/5 space-y-3">
+                    {q.requiresQuestIds?.length > 0 && (
+                      <div>
+                        <p className="text-xs text-white/30 mb-1">Предпосылки:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {q.requiresQuestIds.map((rid) => {
+                            const req = quests.find((x) => x.id === rid);
+                            return (
+                              <span
+                                key={rid}
+                                className={`text-xs px-2 py-0.5 rounded ${req?.completed ? "bg-green-700/30 text-green-300" : "bg-white/10 text-white/50"}`}
+                              >
+                                {req?.completed ? "✓ " : ""}{req?.title || rid}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {q.description ? (
+                      <SimpleMarkdown text={q.description} className="text-white/60 text-sm" />
+                    ) : (
+                      <p className="text-white/30 text-sm italic">Нет описания</p>
+                    )}
+                  </div>
                 )}
-                <button
-                  onClick={() => {
-                    const isActive = scene?.activeQuestId === q.id;
-                    setScene((prev) => ({ ...prev, activeQuestId: isActive ? null : q.id }));
-                  }}
-                  className={`px-2 py-1 rounded text-xs transition flex-shrink-0 ${
-                    scene?.activeQuestId === q.id
-                      ? "bg-green-600/60 text-green-200"
-                      : "bg-white/10 hover:bg-white/20"
-                  }`}
-                >
-                  {scene?.activeQuestId === q.id ? "✓ Сцена" : "На сцене"}
-                </button>
-                <button
-                  onClick={() => openEdit(q)}
-                  className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded text-xs transition flex-shrink-0"
-                >
-                  Изменить
-                </button>
               </div>
             );
           })}

@@ -89,7 +89,7 @@ export default function Interactor() {
               {/* Content area */}
               <div className="flex-1 overflow-y-auto min-h-0">
                 {activeTab === "map" && (
-                  <MapTab maps={maps} quests={quests} setScene={setScene} showCompleted={!!data?.showCompletedOnMap} />
+                  <MapTab maps={maps} quests={quests} setScene={setScene} showCompleted={!!data?.showCompletedOnMap} sceneActive={data?.active} sceneMapId={data?.activeMapId} />
                 )}
                 {activeTab === "quests" && (
                   <QuestsTab quests={quests} setScene={setScene} />
@@ -139,7 +139,7 @@ export default function Interactor() {
 }
 
 /* ── Map Tab ── */
-function MapTab({ maps, quests, setScene, showCompleted }) {
+function MapTab({ maps, quests, setScene, showCompleted, sceneActive, sceneMapId }) {
   const [mapStack, setMapStack] = useState([]); // breadcrumb stack of map ids
   const [selectedQuest, setSelectedQuest] = useState(null);
 
@@ -193,7 +193,7 @@ function MapTab({ maps, quests, setScene, showCompleted }) {
         >
           ← Назад
         </button>
-        <div className="flex items-center gap-1 text-sm text-white/60">
+        <div className="flex items-center gap-1 text-sm text-white/60 flex-1">
           {mapStack.map((id, i) => {
             const m = maps.find((mp) => mp.id === id);
             return (
@@ -211,6 +211,15 @@ function MapTab({ maps, quests, setScene, showCompleted }) {
             );
           })}
         </div>
+        {sceneActive === "map" && sceneMapId !== currentMapId && (
+          <button
+            onClick={() => setScene((prev) => ({ ...prev, activeMapId: currentMapId }))}
+            className="flex-shrink-0 px-3 py-1 rounded-lg text-sm transition"
+            style={{ background: "rgba(180,130,60,0.2)", border: "1px solid rgba(180,130,60,0.4)", color: "#e8c97a" }}
+          >
+            Перейти →
+          </button>
+        )}
       </div>
 
       {/* Map image */}
