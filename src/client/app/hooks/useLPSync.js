@@ -133,7 +133,7 @@ async function subscribe(url, params, responseHandler, errorHandler, signal) {
   } catch (e) {
     if (e.name !== "AbortError") {
       errorHandler(e);
-      await new Promise((r) => setTimeout(r, 1000));
+      alert("Сервер не отвечает. Немного подождите, а затем нажмите ОК.");
       await subscribe(url, params, responseHandler, errorHandler, signal);
     }
   }
