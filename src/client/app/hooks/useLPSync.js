@@ -114,27 +114,31 @@ function useLPSyncMulti(subUrl, setUrl, keys) {
   return keys.flatMap(k=>[data[k],(v)=>set(v,k)]);
 }
 
-async function subscribe(url, params, responseHandler, errorHandler, signal) {
-  try { 
+async function subscribe(url, params, responseHandler, errorHandler, signal, failCount = 0) {
+  try {
     const paramsEncoded = new URLSearchParams(params)
     const response = await fetch(url + '?' + paramsEncoded.toString(), { signal });
 
     if (response.status === 502) {
-      await subscribe(url, params, responseHandler, errorHandler, signal);
+      await subscribe(url, params, responseHandler, errorHandler, signal, failCount);
     } else if (response.status !== 200) {
       errorHandler(await response.json());
       await new Promise((r) => setTimeout(r, 1000));
-      await subscribe(url, params, responseHandler, errorHandler, signal);
+      await subscribe(url, params, responseHandler, errorHandler, signal, failCount + 1);
     } else {
       const result = await response.json();
       responseHandler(result);
-      await subscribe(url, params, responseHandler, errorHandler, signal);
+      await subscribe(url, params, responseHandler, errorHandler, signal, 0);
     }
   } catch (e) {
     if (e.name !== "AbortError") {
       errorHandler(e);
-      alert("Сервер не отвечает. Немного подождите, а затем нажмите ОК.");
-      await subscribe(url, params, responseHandler, errorHandler, signal);
+      if (failCount >= 2) {
+        alert("Сервер не отвечает. Немного подождите, а затем нажмите ОК.");
+      } else {
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+      await subscribe(url, params, responseHandler, errorHandler, signal, failCount + 1);
     }
   }
 }

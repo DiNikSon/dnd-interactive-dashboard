@@ -333,7 +333,7 @@ function MapModal({ mode, map, maps, onSave, onClose }) {
             <select
               value={parentId}
               onChange={(e) => setParentId(e.target.value)}
-              className="w-full px-3 py-2 bg-white/10 rounded-lg border border-white/20 outline-none text-sm"
+              className="w-full px-3 py-2 bg-gray-800 text-white rounded-lg border border-white/20 outline-none text-sm"
             >
               <option value="">— нет —</option>
               {availableParents.map((m) => (

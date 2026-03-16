@@ -252,6 +252,7 @@ export default function Quests() {
 function QuestEditPanel({ quest, quests, maps, onSave, onClose, onDelete }) {
   const [form, setForm] = useState({ ...quest });
   const [preview, setPreview] = useState(false);
+  const [showMdHint, setShowMdHint] = useState(false);
   const imgRef = useRef(null);
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
@@ -302,7 +303,17 @@ function QuestEditPanel({ quest, quests, maps, onSave, onClose, onDelete }) {
         {/* Description */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="text-xs text-white/50">Описание (Markdown)</label>
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs text-white/50">Описание (Markdown)</label>
+              <button
+                type="button"
+                onClick={() => setShowMdHint((p) => !p)}
+                className="w-4 h-4 rounded-full bg-white/10 hover:bg-white/20 text-white/40 hover:text-white/70 text-[10px] leading-none flex items-center justify-center transition"
+                title="Синтаксис Markdown"
+              >
+                ?
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => setPreview((p) => !p)}
@@ -311,6 +322,18 @@ function QuestEditPanel({ quest, quests, maps, onSave, onClose, onDelete }) {
               {preview ? "Редактор" : "Предпросмотр"}
             </button>
           </div>
+          {showMdHint && (
+            <div className="mb-2 px-3 py-2 bg-black/40 rounded-lg border border-white/10 text-xs text-white/60 space-y-1">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                <span className="font-mono text-white/40"># Заголовок 1</span><span>Большой заголовок</span>
+                <span className="font-mono text-white/40">## Заголовок 2</span><span>Средний заголовок</span>
+                <span className="font-mono text-white/40">**жирный**</span><span><strong>жирный</strong></span>
+                <span className="font-mono text-white/40">*курсив*</span><span><em>курсив</em></span>
+                <span className="font-mono text-white/40">- пункт</span><span>Список</span>
+                <span className="font-mono text-white/40">---</span><span>Разделитель</span>
+              </div>
+            </div>
+          )}
           {preview ? (
             <div className="min-h-[80px] px-3 py-2 bg-white/5 rounded-lg border border-white/10 text-sm text-white/80">
               <SimpleMarkdown text={form.description} />
@@ -355,7 +378,7 @@ function QuestEditPanel({ quest, quests, maps, onSave, onClose, onDelete }) {
               <select
                 value={form.mapId || ""}
                 onChange={(e) => set("mapId", e.target.value || null)}
-                className="w-full px-3 py-2 bg-white/10 rounded-lg border border-white/20 outline-none text-sm"
+                className="w-full px-3 py-2 bg-gray-800 text-white rounded-lg border border-white/20 outline-none text-sm"
               >
                 <option value="">— выбери карту —</option>
                 {maps.map((m) => (

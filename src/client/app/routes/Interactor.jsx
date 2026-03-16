@@ -138,6 +138,22 @@ export default function Interactor() {
   );
 }
 
+function getDescendantMapIds(mapId, maps) {
+  const ids = [mapId];
+  const children = maps.filter((m) => m.parentId === mapId);
+  for (const child of children) {
+    ids.push(...getDescendantMapIds(child.id, maps));
+  }
+  return ids;
+}
+
+function countActiveMapQuests(mapId, maps, quests) {
+  const ids = new Set(getDescendantMapIds(mapId, maps));
+  return getVisibleQuests(quests).filter(
+    (q) => q.visibility === "map" && !q.completed && ids.has(q.mapId)
+  ).length;
+}
+
 /* ── Map Tab ── */
 function MapTab({ maps, quests, setScene, showCompleted, sceneActive, sceneMapId }) {
   const [mapStack, setMapStack] = useState([]); // breadcrumb stack of map ids
@@ -168,15 +184,23 @@ function MapTab({ maps, quests, setScene, showCompleted, sceneActive, sceneMapId
           <p className="text-white/40 text-sm">Нет доступных карт</p>
         ) : (
           <div className="space-y-2">
-            {rootMaps.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => goInto(m.id)}
-                className="w-full text-left px-4 py-3 bg-black/30 hover:bg-black/50 rounded-xl text-white transition"
-              >
-                {m.name}
-              </button>
-            ))}
+            {rootMaps.map((m) => {
+              const count = countActiveMapQuests(m.id, visibleMaps, quests);
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => goInto(m.id)}
+                  className="w-full text-left px-4 py-3 bg-black/30 hover:bg-black/50 rounded-xl text-white transition flex items-center justify-between"
+                >
+                  <span>{m.name}</span>
+                  {count > 0 && (
+                    <span className="ml-2 flex items-center gap-1 px-2 py-0.5 bg-amber-500 text-amber-950 text-xs rounded-full flex-shrink-0">
+                      <span>📜</span><span>{count}</span>
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
@@ -269,15 +293,23 @@ function MapTab({ maps, quests, setScene, showCompleted, sceneActive, sceneMapId
       {childMaps.length > 0 && (
         <div className="px-4 mt-3 space-y-2">
           <p className="text-white/40 text-xs uppercase tracking-wide">Переходы</p>
-          {childMaps.map((m) => (
-            <button
-              key={m.id}
-              onClick={() => goInto(m.id)}
-              className="w-full text-left px-4 py-2.5 bg-black/30 hover:bg-black/50 rounded-xl text-white text-sm transition"
-            >
-              {m.name}
-            </button>
-          ))}
+          {childMaps.map((m) => {
+            const count = countActiveMapQuests(m.id, visibleMaps, quests);
+            return (
+              <button
+                key={m.id}
+                onClick={() => goInto(m.id)}
+                className="w-full text-left px-4 py-2.5 bg-black/30 hover:bg-black/50 rounded-xl text-white text-sm transition flex items-center justify-between"
+              >
+                <span>{m.name}</span>
+                {count > 0 && (
+                  <span className="ml-2 flex items-center gap-1 px-2 py-0.5 bg-amber-500 text-amber-950 text-xs rounded-full flex-shrink-0">
+                    <span>📜</span><span>{count}</span>
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
 

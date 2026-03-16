@@ -109,6 +109,16 @@ export default function ChangeBackground() {
         </div>
       )}
 
+      <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-white/70 hover:text-white transition">
+        <input
+          type="checkbox"
+          checked={!!scene?.noBlur}
+          onChange={(e) => setScene((prev) => ({ ...prev, noBlur: e.target.checked }))}
+          className="w-4 h-4"
+        />
+        Убрать размытие фона
+      </label>
+
       <div
         ref={dropRef}
         onDrop={handleDrop}
