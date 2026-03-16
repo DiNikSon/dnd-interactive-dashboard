@@ -13,9 +13,19 @@ export const VISIBILITY_LABELS = {
   hidden: { label: "Скрыто",         color: "bg-gray-500/20 text-gray-300" },
 };
 
+export const STATUS_CONFIG = {
+  available: { label: "Доступно", color: "bg-gray-500/20 text-gray-300" },
+  active:    { label: "Активно",  color: "bg-blue-500/20 text-blue-300" },
+  completed: { label: "Выполнено", color: "bg-green-500/20 text-green-300" },
+};
+
+export function getQuestStatus(q) {
+  return q.status || (q.completed ? "completed" : "active");
+}
+
 // Returns only quests visible and unlocked for players given the full quests list
 export function getVisibleQuests(allQuests) {
-  const completedIds = new Set(allQuests.filter(q => q.completed).map(q => q.id));
+  const completedIds = new Set(allQuests.filter(q => getQuestStatus(q) === "completed").map(q => q.id));
   return allQuests.filter(q => {
     if (q.visibility === "hidden") return false;
     if (q.requiresQuestIds?.length) {

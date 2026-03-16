@@ -2,7 +2,7 @@ import { useState } from "react";
 import useLPSync from "@/hooks/useLPSync";
 import { NotificationModal } from "@/components/NotificationModal";
 import { generateUUID } from "@/utils/uuid.js";
-import { MARKER_TYPES, VISIBILITY_LABELS, getVisibleQuests } from "@/utils/questMap.js";
+import { MARKER_TYPES, VISIBILITY_LABELS, getVisibleQuests, getQuestStatus } from "@/utils/questMap.js";
 import SimpleMarkdown from "@/components/SimpleMarkdown.jsx";
 
 export function meta() {
@@ -150,7 +150,7 @@ function getDescendantMapIds(mapId, maps) {
 function countActiveMapQuests(mapId, maps, quests) {
   const ids = new Set(getDescendantMapIds(mapId, maps));
   return getVisibleQuests(quests).filter(
-    (q) => q.visibility === "map" && !q.completed && ids.has(q.mapId)
+    (q) => q.visibility === "map" && getQuestStatus(q) !== "completed" && ids.has(q.mapId)
   ).length;
 }
 
@@ -170,7 +170,7 @@ function MapTab({ maps, quests, setScene, showCompleted, sceneActive, sceneMapId
 
   const visibleQuests = getVisibleQuests(quests);
   const mapQuests = visibleQuests.filter(
-    (q) => q.mapId === currentMapId && q.visibility === "map" && (showCompleted || !q.completed)
+    (q) => q.mapId === currentMapId && q.visibility === "map" && (showCompleted || getQuestStatus(q) !== "completed")
   );
 
   const goInto = (mapId) => setMapStack((s) => [...s, mapId]);
@@ -265,7 +265,7 @@ function MapTab({ maps, quests, setScene, showCompleted, sceneActive, sceneMapId
                   left: `${(q.mapX || 0) * 100}%`,
                   top: `${(q.mapY || 0) * 100}%`,
                   transform: "translate(-50%, -50%)",
-                  opacity: q.completed ? 0.4 : 1,
+                  opacity: getQuestStatus(q) === "completed" ? 0.4 : 1,
                 }}
                 onClick={() => setSelectedQuest(q)}
               >
@@ -328,8 +328,8 @@ function QuestsTab({ quests, setScene }) {
 
   const visible = getVisibleQuests(quests);
   const filtered = visible.filter((q) => {
-    if (filter === "active") return !q.completed;
-    if (filter === "done") return q.completed;
+    if (filter === "active") return getQuestStatus(q) !== "completed";
+    if (filter === "done") return getQuestStatus(q) === "completed";
     return true;
   });
 
@@ -369,12 +369,12 @@ function QuestsTab({ quests, setScene }) {
                 <div className="flex items-center gap-2">
                   <span
                     className={`font-medium text-sm ${
-                      q.completed ? "line-through text-white/40" : ""
+                      getQuestStatus(q) === "completed" ? "line-through text-white/40" : ""
                     }`}
                   >
                     {q.title || "Без названия"}
                   </span>
-                  {q.completed && (
+                  {getQuestStatus(q) === "completed" && (
                     <span className="text-green-400 text-xs ml-auto">✓</span>
                   )}
                 </div>
@@ -422,11 +422,12 @@ function QuestDetail({ quest, onClose, setScene }) {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          {quest.description ? (
-            <SimpleMarkdown text={quest.description} className="text-white/75 text-sm leading-relaxed" />
-          ) : (
-            <p className="text-white/30 text-sm">Нет описания</p>
-          )}
+          {(() => {
+            const text = getQuestStatus(quest) === "available" ? quest.availableDescription : quest.description;
+            return text
+              ? <SimpleMarkdown text={text} className="text-white/75 text-sm leading-relaxed" />
+              : <p className="text-white/30 text-sm">Нет описания</p>;
+          })()}
           {quest.completed && (
             <p className="mt-3 text-green-400 text-sm font-medium">✓ Выполнено</p>
           )}

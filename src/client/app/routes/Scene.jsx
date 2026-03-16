@@ -3,7 +3,7 @@ import useLPSync from "@/hooks/useLPSync";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { NotificationModal } from "@/components/NotificationModal";
 import { WidgetOverlay } from "@/components/WidgetOverlay";
-import { MARKER_TYPES, getVisibleQuests } from "@/utils/questMap.js";
+import { MARKER_TYPES, getVisibleQuests, getQuestStatus } from "@/utils/questMap.js";
 import SimpleMarkdown from "@/components/SimpleMarkdown.jsx";
 
 export function meta({}) {
@@ -53,7 +53,7 @@ export default function Scene() {
     )}
     {data.active === "map" && (() => {
       const count = getVisibleQuests(questsData?.items || []).filter(
-        (q) => q.visibility === "list" && !q.completed
+        (q) => q.visibility === "list" && getQuestStatus(q) !== "completed"
       ).length;
       return count > 0 ? <QuestListBadge count={count} /> : null;
     })()}
@@ -88,9 +88,10 @@ function QuestPopup({ quest }) {
             {quest.title}
           </h2>
         </div>
-        {quest.description && (
-          <SimpleMarkdown text={quest.description} className="text-white/75" style={{ fontSize: "1.35vw", lineHeight: 1.6 }} />
-        )}
+        {(() => {
+          const text = getQuestStatus(quest) === "available" ? quest.availableDescription : quest.description;
+          return text ? <SimpleMarkdown text={text} className="text-white/75" style={{ fontSize: "1.35vw", lineHeight: 1.6 }} /> : null;
+        })()}
       </div>
     </div>
   );
@@ -140,7 +141,7 @@ function MapDisplay({ mapId, maps, quests, showCompleted }) {
   if (!map?.imageUrl) return null;
 
   const visibleQuests = getVisibleQuests(quests);
-  const mapQuests = visibleQuests.filter((q) => q.mapId === mapId && q.visibility === "map" && (showCompleted || !q.completed));
+  const mapQuests = visibleQuests.filter((q) => q.mapId === mapId && q.visibility === "map" && (showCompleted || getQuestStatus(q) !== "completed"));
 
   const onLoad = (e) => {
     const img = e.target;
@@ -167,7 +168,7 @@ function MapDisplay({ mapId, maps, quests, showCompleted }) {
                 left: `${(q.mapX || 0) * 100}%`,
                 top: `${(q.mapY || 0) * 100}%`,
                 transform: "translate(-50%, -50%)",
-                opacity: q.completed ? 0.4 : 1,
+                opacity: getQuestStatus(q) === "completed" ? 0.4 : 1,
               }}
             >
               <div

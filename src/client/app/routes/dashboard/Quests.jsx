@@ -2,13 +2,14 @@ import { useState, useRef } from "react";
 import { useOutletContext } from "react-router";
 import useLPSync from "@/hooks/useLPSync";
 import { generateUUID } from "@/utils/uuid.js";
-import { MARKER_TYPES, VISIBILITY_LABELS } from "@/utils/questMap.js";
+import { MARKER_TYPES, VISIBILITY_LABELS, STATUS_CONFIG, getQuestStatus } from "@/utils/questMap.js";
 import SimpleMarkdown from "@/components/SimpleMarkdown.jsx";
 
 const TABS = [
-  { key: "all", label: "Все" },
-  { key: "active", label: "Активные" },
-  { key: "done", label: "Завершённые" },
+  { key: "all",       label: "Все" },
+  { key: "available", label: "Доступные" },
+  { key: "active",    label: "Активные" },
+  { key: "done",      label: "Завершённые" },
 ];
 
 export default function Quests() {
@@ -26,30 +27,34 @@ export default function Quests() {
   const [expandedId, setExpandedId] = useState(null);
 
   const filtered = quests.filter((q) => {
-    if (tab === "active") return !q.completed;
-    if (tab === "done") return q.completed;
+    const s = getQuestStatus(q);
+    if (tab === "available") return s === "available";
+    if (tab === "active")    return s === "active";
+    if (tab === "done")      return s === "completed";
     return true;
-  }).sort((a, b) => (a.completed ? 1 : 0) - (b.completed ? 1 : 0));
+  }).sort((a, b) => (getQuestStatus(a) === "completed" ? 1 : 0) - (getQuestStatus(b) === "completed" ? 1 : 0));
 
   const openAdd = () =>
     setEditQuest({
       id: null,
       title: "",
+      status: "available",
       description: "",
+      availableDescription: "",
+      note: "",
       visibility: "list",
       mapId: null,
       markerType: "quest",
       mapX: 0.5,
       mapY: 0.5,
       requiresQuestIds: [],
-      completed: false,
     });
 
   const openEdit = (q) => setEditQuest({ ...q });
 
-  const handleToggleCompleted = (q) => {
+  const handleSetStatus = (q, status) => {
     const newItems = quests.map((item) =>
-      item.id === q.id ? { ...item, completed: !item.completed } : item
+      item.id === q.id ? { ...item, status, completed: status === "completed" } : item
     );
     setQuestsData({ items: newItems });
   };
@@ -126,6 +131,8 @@ export default function Quests() {
           )}
           {filtered.map((q) => {
             const vis = VISIBILITY_LABELS[q.visibility] || VISIBILITY_LABELS.hidden;
+            const status = getQuestStatus(q);
+            const statusCfg = STATUS_CONFIG[status];
             const isExpanded = expandedId === q.id;
             return (
               <div
@@ -137,16 +144,19 @@ export default function Quests() {
                   className="flex items-center gap-3 px-4 py-3 cursor-pointer"
                   onClick={() => setExpandedId(isExpanded ? null : q.id)}
                 >
-                  <input
-                    type="checkbox"
-                    checked={!!q.completed}
-                    onChange={(e) => { e.stopPropagation(); handleToggleCompleted(q); }}
+                  <select
+                    value={status}
+                    onChange={(e) => { e.stopPropagation(); handleSetStatus(q, e.target.value); }}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-4 h-4 flex-shrink-0"
-                  />
+                    className={`px-2 py-0.5 rounded text-xs flex-shrink-0 border-0 outline-none cursor-pointer ${statusCfg.color} bg-transparent`}
+                  >
+                    {Object.entries(STATUS_CONFIG).map(([k, v]) => (
+                      <option key={k} value={k} className="bg-gray-800 text-white">{v.label}</option>
+                    ))}
+                  </select>
                   <span
                     className={`flex-1 text-sm font-medium ${
-                      q.completed ? "line-through text-white/40" : ""
+                      status === "completed" ? "line-through text-white/40" : ""
                     }`}
                   >
                     {q.title || "Без названия"}
@@ -154,7 +164,7 @@ export default function Quests() {
                   <span className={`px-2 py-0.5 rounded text-xs flex-shrink-0 ${vis.color}`}>
                     {vis.label}
                   </span>
-                  {!q.completed && (
+                  {status !== "completed" && (
                     <button
                       onClick={(e) => { e.stopPropagation(); handleComplete(q); }}
                       className="px-2 py-1 bg-green-600/30 hover:bg-green-600/60 text-green-300 rounded text-xs transition flex-shrink-0"
@@ -185,16 +195,23 @@ export default function Quests() {
                         <div className="flex flex-wrap gap-1">
                           {q.requiresQuestIds.map((rid) => {
                             const req = quests.find((x) => x.id === rid);
+                            const reqDone = getQuestStatus(req) === "completed";
                             return (
                               <span
                                 key={rid}
-                                className={`text-xs px-2 py-0.5 rounded ${req?.completed ? "bg-green-700/30 text-green-300" : "bg-white/10 text-white/50"}`}
+                                className={`text-xs px-2 py-0.5 rounded ${reqDone ? "bg-green-700/30 text-green-300" : "bg-white/10 text-white/50"}`}
                               >
-                                {req?.completed ? "✓ " : ""}{req?.title || rid}
+                                {reqDone ? "✓ " : ""}{req?.title || rid}
                               </span>
                             );
                           })}
                         </div>
+                      </div>
+                    )}
+                    {q.availableDescription && (
+                      <div className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg">
+                        <p className="text-[10px] text-white/30 uppercase tracking-wide font-medium mb-1">Описание (до взятия)</p>
+                        <SimpleMarkdown text={q.availableDescription} className="text-white/55 text-sm" />
                       </div>
                     )}
                     {q.description ? (
@@ -203,9 +220,9 @@ export default function Quests() {
                       <p className="text-white/30 text-sm italic">Нет описания</p>
                     )}
                     {q.note && (
-                      <div className="mt-2 px-3 py-2 bg-yellow-900/20 border border-yellow-600/30 rounded-lg text-yellow-200/70 text-xs whitespace-pre-wrap">
-                        <span className="text-yellow-600/60 font-medium uppercase tracking-wide text-[10px]">Заметка · </span>
-                        {q.note}
+                      <div className="px-3 py-2 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
+                        <p className="text-[10px] text-yellow-600/60 uppercase tracking-wide font-medium mb-1">Заметка</p>
+                        <SimpleMarkdown text={q.note} className="text-yellow-200/70 text-xs" />
                       </div>
                     )}
                   </div>
@@ -255,6 +272,33 @@ export default function Quests() {
   );
 }
 
+function MarkdownField({ label, value, onChange, rows, placeholder, className }) {
+  const [preview, setPreview] = useState(false);
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <label className="text-xs text-white/50">{label}</label>
+        <button type="button" onClick={() => setPreview((p) => !p)} className="text-xs text-white/40 hover:text-white/70 transition">
+          {preview ? "Редактор" : "Предпросмотр"}
+        </button>
+      </div>
+      {preview ? (
+        <div className={`min-h-[60px] px-3 py-2 rounded-lg border text-sm ${className}`}>
+          <SimpleMarkdown text={value} />
+        </div>
+      ) : (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          rows={rows}
+          placeholder={placeholder}
+          className={`w-full px-3 py-2 rounded-lg border outline-none text-sm resize-none ${className}`}
+        />
+      )}
+    </div>
+  );
+}
+
 function QuestEditPanel({ quest, quests, maps, onSave, onClose, onDelete }) {
   const [form, setForm] = useState({ ...quest });
   const [preview, setPreview] = useState(false);
@@ -293,6 +337,27 @@ function QuestEditPanel({ quest, quests, maps, onSave, onClose, onDelete }) {
       </div>
 
       <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Status */}
+        <div>
+          <label className="block text-xs text-white/50 mb-1">Статус</label>
+          <div className="flex gap-2">
+            {Object.entries(STATUS_CONFIG).map(([k, v]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => set("status", k)}
+                className={`flex-1 px-2 py-1.5 rounded-lg text-xs transition ${
+                  (form.status || getQuestStatus(form)) === k
+                    ? v.color + " ring-1 ring-current"
+                    : "bg-white/5 text-white/50 hover:bg-white/10"
+                }`}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Title */}
         <div>
           <label className="block text-xs text-white/50 mb-1">Название</label>
@@ -316,20 +381,14 @@ function QuestEditPanel({ quest, quests, maps, onSave, onClose, onDelete }) {
                 onClick={() => setShowMdHint((p) => !p)}
                 className="w-4 h-4 rounded-full bg-white/10 hover:bg-white/20 text-white/40 hover:text-white/70 text-[10px] leading-none flex items-center justify-center transition"
                 title="Синтаксис Markdown"
-              >
-                ?
-              </button>
+              >?</button>
             </div>
-            <button
-              type="button"
-              onClick={() => setPreview((p) => !p)}
-              className="text-xs text-white/40 hover:text-white/70 transition"
-            >
+            <button type="button" onClick={() => setPreview((p) => !p)} className="text-xs text-white/40 hover:text-white/70 transition">
               {preview ? "Редактор" : "Предпросмотр"}
             </button>
           </div>
           {showMdHint && (
-            <div className="mb-2 px-3 py-2 bg-black/40 rounded-lg border border-white/10 text-xs text-white/60 space-y-1">
+            <div className="mb-2 px-3 py-2 bg-black/40 rounded-lg border border-white/10 text-xs text-white/60">
               <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
                 <span className="font-mono text-white/40"># Заголовок 1</span><span>Большой заголовок</span>
                 <span className="font-mono text-white/40">## Заголовок 2</span><span>Средний заголовок</span>
@@ -341,7 +400,7 @@ function QuestEditPanel({ quest, quests, maps, onSave, onClose, onDelete }) {
             </div>
           )}
           {preview ? (
-            <div className="min-h-[80px] px-3 py-2 bg-white/5 rounded-lg border border-white/10 text-sm text-white/80">
+            <div className="min-h-[80px] px-3 py-2 bg-white/10 rounded-lg border border-white/20 text-sm text-white/80">
               <SimpleMarkdown text={form.description} />
             </div>
           ) : (
@@ -495,28 +554,25 @@ function QuestEditPanel({ quest, quests, maps, onSave, onClose, onDelete }) {
           </div>
         )}
 
-        {/* Note */}
-        <div>
-          <label className="block text-xs text-white/50 mb-1">Заметка ГМ (только в дэшборде)</label>
-          <textarea
-            value={form.note || ""}
-            onChange={(e) => set("note", e.target.value)}
-            rows={3}
-            className="w-full px-3 py-2 bg-yellow-900/20 rounded-lg border border-yellow-600/30 outline-none text-sm resize-none text-yellow-200/80 placeholder-yellow-600/40"
-            placeholder="Приватные заметки..."
-          />
-        </div>
+        {/* Available Description */}
+        <MarkdownField
+          label="Описание до взятия (только в дэшборде)"
+          value={form.availableDescription || ""}
+          onChange={(v) => set("availableDescription", v)}
+          rows={3}
+          placeholder="Что видят игроки до взятия задания..."
+          className="bg-white/5 border-white/10 text-white/70"
+        />
 
-        {/* Completed */}
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={!!form.completed}
-            onChange={(e) => set("completed", e.target.checked)}
-            className="w-4 h-4"
-          />
-          <span className="text-sm">Выполнено</span>
-        </label>
+        {/* Note */}
+        <MarkdownField
+          label="Заметка ГМ (только в дэшборде)"
+          value={form.note || ""}
+          onChange={(v) => set("note", v)}
+          rows={3}
+          placeholder="Приватные заметки..."
+          className="bg-yellow-900/20 border-yellow-600/30 text-yellow-200/80"
+        />
 
         {/* Actions */}
         <div className="flex gap-2 pt-2">
