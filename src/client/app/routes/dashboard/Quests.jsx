@@ -202,6 +202,12 @@ export default function Quests() {
                     ) : (
                       <p className="text-white/30 text-sm italic">Нет описания</p>
                     )}
+                    {q.note && (
+                      <div className="mt-2 px-3 py-2 bg-yellow-900/20 border border-yellow-600/30 rounded-lg text-yellow-200/70 text-xs whitespace-pre-wrap">
+                        <span className="text-yellow-600/60 font-medium uppercase tracking-wide text-[10px]">Заметка · </span>
+                        {q.note}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -488,6 +494,18 @@ function QuestEditPanel({ quest, quests, maps, onSave, onClose, onDelete }) {
             </div>
           </div>
         )}
+
+        {/* Note */}
+        <div>
+          <label className="block text-xs text-white/50 mb-1">Заметка ГМ (только в дэшборде)</label>
+          <textarea
+            value={form.note || ""}
+            onChange={(e) => set("note", e.target.value)}
+            rows={3}
+            className="w-full px-3 py-2 bg-yellow-900/20 rounded-lg border border-yellow-600/30 outline-none text-sm resize-none text-yellow-200/80 placeholder-yellow-600/40"
+            placeholder="Приватные заметки..."
+          />
+        </div>
 
         {/* Completed */}
         <label className="flex items-center gap-2 cursor-pointer">
