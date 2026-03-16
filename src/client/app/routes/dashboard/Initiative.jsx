@@ -203,7 +203,7 @@ export default function Initiative() {
   const Avatar = ({ p }) => {
     const bg =
       p.type === "enemy"
-        ? "#ef4444"
+        ? "#c2410c"
         : p.type === "ally"
         ? "#22c55e"
         : p.color || "#6366f1";

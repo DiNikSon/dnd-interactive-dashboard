@@ -248,7 +248,8 @@ function MapTab({ maps, quests, setScene, showCompleted, sceneActive, sceneMapId
 
       {/* Map image */}
       {currentMap?.imageUrl ? (
-        <div className="mx-4 mt-3 rounded-xl overflow-x-auto bg-black/20 flex items-center justify-center" style={{ height: "55vh" }}>
+        <div className="mx-4 mt-3 rounded-xl overflow-x-auto bg-black/20" style={{ height: "55vh" }}>
+          <div style={{ minWidth: "min-content", margin: "0 auto", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div className="relative h-full flex-shrink-0" style={{ display: "inline-block" }}>
           <img
             src={currentMap.imageUrl}
@@ -265,22 +266,22 @@ function MapTab({ maps, quests, setScene, showCompleted, sceneActive, sceneMapId
                   left: `${(q.mapX || 0) * 100}%`,
                   top: `${(q.mapY || 0) * 100}%`,
                   transform: "translate(-50%, -50%)",
-                  opacity: getQuestStatus(q) === "completed" ? 0.4 : 1,
                 }}
                 onClick={() => setSelectedQuest(q)}
               >
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg"
                   style={{
-                    backgroundColor: mtype.color,
+                    backgroundColor: getQuestStatus(q) === "completed" ? "#22c55e" : mtype.color,
                     border: "2px solid rgba(255,255,255,0.4)",
                   }}
                 >
-                  {mtype.symbol}
+                  {getQuestStatus(q) === "completed" ? "✓" : mtype.symbol}
                 </div>
               </button>
             );
           })}
+          </div>
           </div>
         </div>
       ) : (
@@ -326,12 +327,15 @@ function QuestsTab({ quests, setScene }) {
   const [filter, setFilter] = useState("active");
   const [selectedQuest, setSelectedQuest] = useState(null);
 
+  const STATUS_ORDER = { active: 0, available: 1, completed: 2 };
   const visible = getVisibleQuests(quests);
-  const filtered = visible.filter((q) => {
-    if (filter === "active") return getQuestStatus(q) !== "completed";
-    if (filter === "done") return getQuestStatus(q) === "completed";
-    return true;
-  });
+  const filtered = visible
+    .filter((q) => {
+      if (filter === "active") return getQuestStatus(q) !== "completed";
+      if (filter === "done") return getQuestStatus(q) === "completed";
+      return true;
+    })
+    .sort((a, b) => (STATUS_ORDER[getQuestStatus(a)] ?? 1) - (STATUS_ORDER[getQuestStatus(b)] ?? 1));
 
   return (
     <div className="p-4 space-y-3">
@@ -367,11 +371,7 @@ function QuestsTab({ quests, setScene }) {
                 className="w-full text-left px-4 py-3 bg-black/30 hover:bg-black/50 rounded-xl text-white transition space-y-1"
               >
                 <div className="flex items-center gap-2">
-                  <span
-                    className={`font-medium text-sm ${
-                      getQuestStatus(q) === "completed" ? "line-through text-white/40" : ""
-                    }`}
-                  >
+                  <span className={`font-medium text-sm ${getQuestStatus(q) === "completed" ? "line-through text-white/40" : ""}`}>
                     {q.title || "Без названия"}
                   </span>
                   {getQuestStatus(q) === "completed" && (

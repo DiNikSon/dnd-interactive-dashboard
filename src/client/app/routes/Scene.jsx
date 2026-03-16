@@ -168,20 +168,19 @@ function MapDisplay({ mapId, maps, quests, showCompleted }) {
                 left: `${(q.mapX || 0) * 100}%`,
                 top: `${(q.mapY || 0) * 100}%`,
                 transform: "translate(-50%, -50%)",
-                opacity: getQuestStatus(q) === "completed" ? 0.4 : 1,
               }}
             >
               <div
                 className="rounded-full flex items-center justify-center text-white font-bold shadow-lg"
                 style={{
-                  backgroundColor: mtype.color,
+                  backgroundColor: getQuestStatus(q) === "completed" ? "#22c55e" : mtype.color,
                   border: "2px solid rgba(255,255,255,0.4)",
                   width: "2.5vw",
                   height: "2.5vw",
                   fontSize: "1.2vw",
                 }}
               >
-                {mtype.symbol}
+                {getQuestStatus(q) === "completed" ? "✓" : mtype.symbol}
               </div>
             </div>
           );
@@ -215,7 +214,7 @@ function InitiativeWidget({ initiative }) {
         const isCurrent = p.id === currentTurnId;
         const bg =
           p.type === "enemy"
-            ? "#ef4444"
+            ? "#c2410c"
             : p.type === "ally"
             ? "#22c55e"
             : p.color || "#6366f1";
@@ -254,7 +253,7 @@ function InitiativeWidget({ initiative }) {
 function Audio({muted, setMuted, sounds}){
   const soundsArray = sounds?(Array.isArray(sounds)?sounds:[sounds]):null
   return <>
-    <div className="absolute top-3 right-3 size-16" onClick={()=>setMuted(m=>!m)}>
+    <div className="fixed top-3 right-3 size-16 z-[100] rounded-full bg-black/40 border border-white/20 backdrop-blur-sm cursor-pointer flex items-center justify-center" onClick={()=>setMuted(m=>!m)}>
       {
         muted?
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-volume-mute-fill size-16" viewBox="0 0 16 16">

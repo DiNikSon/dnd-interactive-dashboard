@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { getQuestStatus } from "@/utils/questMap.js";
 import { useOutletContext } from "react-router";
 import useLPSync from "@/hooks/useLPSync";
 import { generateUUID } from "@/utils/uuid.js";
@@ -228,16 +229,18 @@ function QuestMarker({ quest, mtype }) {
         left: `${x}%`,
         top: `${y}%`,
         transform: "translate(-50%, -50%)",
-        opacity: quest.completed ? 0.4 : 1,
       }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
       <div
         className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg cursor-pointer"
-        style={{ backgroundColor: mtype.color, border: "2px solid rgba(255,255,255,0.4)" }}
+        style={{
+          backgroundColor: getQuestStatus(quest) === "completed" ? "#22c55e" : mtype.color,
+          border: "2px solid rgba(255,255,255,0.4)",
+        }}
       >
-        {mtype.symbol}
+        {getQuestStatus(quest) === "completed" ? "✓" : mtype.symbol}
       </div>
       {hover && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap shadow-lg z-10">
