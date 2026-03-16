@@ -473,9 +473,6 @@ function CharacterSelect({ characters, onClaim, claiming }) {
                 style={{ backgroundColor: char.color }}
               />
               <span className="font-medium">{char.name}</span>
-              <span className="ml-auto text-white/50 text-sm">
-                инициатива {char.initiative}
-              </span>
             </button>
           ))}
         </div>

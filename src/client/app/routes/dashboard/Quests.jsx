@@ -14,7 +14,7 @@ const TABS = [
 
 export default function Quests() {
   const { scene, setScene } = useOutletContext();
-  const [questsData, setQuestsData, mapsData, , notifData, setNotifications] = useLPSync(
+  const [questsData, setQuestsData, mapsData, , , setNotifications] = useLPSync(
     "/sync/subscribe/", "/sync/set/", ["quests", "maps", "notifications"]
   );
 
@@ -67,9 +67,9 @@ export default function Quests() {
   ];
 
   const handleComplete = (q) => {
-    if (q.completed) return;
+    if (getQuestStatus(q) === "completed") return;
     const newItems = quests.map((item) =>
-      item.id === q.id ? { ...item, completed: true } : item
+      item.id === q.id ? { ...item, status: "completed", completed: true } : item
     );
     setQuestsData({ items: newItems });
     const congrats = CONGRATULATIONS[Math.floor(Math.random() * CONGRATULATIONS.length)];
@@ -324,6 +324,7 @@ function QuestEditPanel({ quest, quests, maps, onSave, onClose, onDelete }) {
   };
 
   const otherQuests = quests.filter((q) => q.id !== form.id);
+  const [prereqSearch, setPrereqSearch] = useState("");
 
   return (
     <div className="w-96 flex-shrink-0 flex flex-col bg-white/5 rounded-xl overflow-hidden">
@@ -525,31 +526,46 @@ function QuestEditPanel({ quest, quests, maps, onSave, onClose, onDelete }) {
         {/* Requirements */}
         {otherQuests.length > 0 && (
           <div>
-            <label className="block text-xs text-white/50 mb-1">
-              Требует выполнения
-            </label>
-            <div className="space-y-1 max-h-32 overflow-y-auto">
-              {otherQuests.map((q) => (
-                <label
-                  key={q.id}
-                  className="flex items-center gap-2 text-sm cursor-pointer hover:bg-white/5 px-2 py-1 rounded"
-                >
-                  <input
-                    type="checkbox"
-                    checked={(form.requiresQuestIds || []).includes(q.id)}
-                    onChange={(e) => {
-                      const curr = form.requiresQuestIds || [];
-                      if (e.target.checked) {
-                        set("requiresQuestIds", [...curr, q.id]);
-                      } else {
-                        set("requiresQuestIds", curr.filter((id) => id !== q.id));
-                      }
-                    }}
-                    className="w-3.5 h-3.5"
-                  />
-                  <span className="text-white/70">{q.title || "Без названия"}</span>
-                </label>
-              ))}
+            <label className="block text-xs text-white/50 mb-2">Требует выполнения</label>
+            {/* Выбранные — теги */}
+            {(form.requiresQuestIds || []).length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {(form.requiresQuestIds || []).map((rid) => {
+                  const rq = otherQuests.find((q) => q.id === rid);
+                  return (
+                    <span key={rid} className="flex items-center gap-1 px-2 py-0.5 bg-indigo-600/30 border border-indigo-500/40 text-indigo-200 text-xs rounded-full">
+                      {rq?.title || rid}
+                      <button
+                        type="button"
+                        onClick={() => set("requiresQuestIds", (form.requiresQuestIds || []).filter((id) => id !== rid))}
+                        className="text-indigo-300/60 hover:text-white leading-none ml-0.5"
+                      >×</button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            {/* Поиск + список */}
+            <input
+              type="text"
+              value={prereqSearch}
+              onChange={(e) => setPrereqSearch(e.target.value)}
+              placeholder="Поиск задания..."
+              className="w-full px-2 py-1.5 mb-1 bg-white/5 rounded-lg border border-white/10 outline-none text-xs text-white placeholder-white/30"
+            />
+            <div className="space-y-0.5 max-h-28 overflow-y-auto">
+              {otherQuests
+                .filter((q) => !(form.requiresQuestIds || []).includes(q.id) && (q.title || "").toLowerCase().includes(prereqSearch.toLowerCase()))
+                .map((q) => (
+                  <button
+                    key={q.id}
+                    type="button"
+                    onClick={() => set("requiresQuestIds", [...(form.requiresQuestIds || []), q.id])}
+                    className="w-full text-left px-2 py-1 text-xs text-white/60 hover:text-white hover:bg-white/5 rounded transition"
+                  >
+                    + {q.title || "Без названия"}
+                  </button>
+                ))}
             </div>
           </div>
         )}
