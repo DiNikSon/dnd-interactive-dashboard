@@ -101,7 +101,7 @@ export function ResourceRow({ resource: r, compact, onEdit, onChange, onSetValue
       {r.type === "currency"
         ? <CurrencyControl resource={r} onChange={onChange} />
         : r.type === "tally"
-        ? <TallyControl resource={r} onChange={onChange} compact={compact} />
+        ? <TallyControl resource={r} onChange={onChange} onSetValue={onSetValue} compact={compact} />
         : <NumericalControl resource={r} onChange={onChange} onSetValue={onSetValue} compact={compact} />
       }
 
@@ -150,22 +150,23 @@ export function NumericalControl({ resource: r, onChange, onSetValue, compact })
 
 // ── Tally ─────────────────────────────────────────────────────────────────────
 
-export function TallyControl({ resource: r, onChange, compact }) {
+export function TallyControl({ resource: r, onChange, onSetValue, compact }) {
   const size = compact ? "w-4 h-4 text-[10px]" : "w-5 h-5 text-xs";
   return (
-    <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap max-w-[16rem]">
+    <div className="flex items-center gap-1.5 min-w-0">
       <button
         onClick={() => onChange(r.id, -1)}
         className="w-6 h-6 rounded bg-white/10 hover:bg-white/20 text-white text-sm leading-none transition flex items-center justify-center flex-shrink-0"
       >−</button>
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-1 min-w-0">
         {Array.from({ length: r.max }, (_, i) => (
-          <div
+          <button
             key={i}
-            className={`${size} rounded-full flex items-center justify-center flex-shrink-0 ${
+            onClick={() => onSetValue?.(r.id, i + 1)}
+            className={`${size} rounded-full flex items-center justify-center flex-shrink-0 transition ${
               i < r.value
-                ? "bg-indigo-500 border border-indigo-400"
-                : "bg-white/10 border border-white/20"
+                ? "bg-indigo-500 border border-indigo-400 hover:bg-indigo-400"
+                : "bg-white/10 border border-white/20 hover:bg-white/20"
             }`}
           />
         ))}

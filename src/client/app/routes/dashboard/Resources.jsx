@@ -322,11 +322,14 @@ function ResourceEditPanel({ resource, onSave, onClose, onDelete }) {
             </div>
           )}
           <div className="flex-1">
-            <label className="block text-xs text-white/50 mb-1">Максимум</label>
+            <label className="block text-xs text-white/50 mb-1">
+              Максимум{form.type === "tally" && <span className="text-red-400 ml-0.5">*</span>}
+            </label>
             <input type="number" min={1} value={form.max ?? ""}
               onChange={e => set("max", e.target.value === "" ? null : Math.max(1, parseInt(e.target.value) || 1))}
-              placeholder="∞"
-              className="w-full px-3 py-2 bg-white/10 rounded-lg border border-white/20 outline-none text-sm" />
+              placeholder={form.type === "tally" ? "обязательно" : "∞"}
+              required={form.type === "tally"}
+              className={`w-full px-3 py-2 bg-white/10 rounded-lg border outline-none text-sm ${form.type === "tally" && !form.max ? "border-red-400/60" : "border-white/20"}`} />
           </div>
         </div>
 
@@ -372,7 +375,8 @@ function ResourceEditPanel({ resource, onSave, onClose, onDelete }) {
               Удалить
             </button>
           )}
-          <button type="submit" className="ml-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm">
+          <button type="submit" disabled={form.type === "tally" && !form.max}
+            className="ml-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 rounded-lg text-sm">
             Сохранить
           </button>
         </div>
