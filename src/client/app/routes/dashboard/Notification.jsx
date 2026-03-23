@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router";
 import useLPSync from "@/hooks/useLPSync";
 import { generateUUID } from "@/utils/uuid.js";
@@ -33,12 +33,16 @@ export default function Notification() {
     };
 
     if (isScene) {
-      setNotifications((prev) => ({ ...prev, scene: notif }));
+      setNotifications((prev) => {
+        const q = Array.isArray(prev?.scene) ? prev.scene : prev?.scene ? [prev.scene] : [];
+        return { ...prev, scene: [...q, notif] };
+      });
     } else {
-      setNotifications((prev) => ({
-        ...prev,
-        players: { ...(prev.players || {}), [target]: notif },
-      }));
+      setNotifications((prev) => {
+        const current = prev?.players?.[target];
+        const arr = Array.isArray(current) ? current : current ? [current] : [];
+        return { ...prev, players: { ...(prev.players || {}), [target]: [...arr, notif] } };
+      });
     }
 
     setTitle("");
@@ -46,12 +50,34 @@ export default function Notification() {
   };
 
   const clearScene = () =>
-    setNotifications((prev) => ({ ...prev, scene: null }));
+    setNotifications((prev) => ({ ...prev, scene: [] }));
+
+  const clearSceneItem = (id) =>
+    setNotifications((prev) => ({
+      ...prev,
+      scene: (Array.isArray(prev?.scene) ? prev.scene : []).filter(n => n.id !== id),
+    }));
+
+  const sceneQueue = Array.isArray(notifications?.scene)
+    ? notifications.scene
+    : notifications?.scene ? [notifications.scene] : [];
+
+  // Авто-удаление первого элемента очереди когда его таймер истёк
+  useEffect(() => {
+    const first = sceneQueue[0];
+    if (!first?.timer) return;
+    const remaining = first.createdAt + first.timer * 1000 - Date.now();
+    const delay = Math.max(0, remaining) + 300; // небольшой буфер после конца
+    const t = setTimeout(() => {
+      setNotifications({ ...notifications, scene: sceneQueue.slice(1) });
+    }, delay);
+    return () => clearTimeout(t);
+  }, [sceneQueue]);
 
   const clearPlayer = (charId) =>
     setNotifications((prev) => ({
       ...prev,
-      players: { ...(prev.players || {}), [charId]: null },
+      players: { ...(prev.players || {}), [charId]: [] },
     }));
 
   return (
@@ -144,46 +170,47 @@ export default function Notification() {
       <div className="space-y-2">
         <h3 className="text-sm font-medium text-white/70">Активные уведомления</h3>
 
-        {notifications?.scene && (
-          <div className="flex items-center justify-between px-3 py-2 bg-white/10 rounded-lg text-sm">
-            <span>
-              <span className="text-white/50 mr-2">🖥 Сцена</span>
-              <span className="font-medium">{notifications.scene.title || notifications.scene.text}</span>
-            </span>
-            <button
-              onClick={clearScene}
-              className="text-white/40 hover:text-red-400 ml-3"
-            >
-              ✕
-            </button>
+        {sceneQueue.length > 0 && (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-white/40">🖥 Сцена — очередь ({sceneQueue.length})</span>
+              <button onClick={clearScene} className="text-xs text-white/30 hover:text-red-400">очистить всё</button>
+            </div>
+            {sceneQueue.map((n, i) => (
+              <div key={n.id} className="flex items-center justify-between px-3 py-2 bg-white/10 rounded-lg text-sm">
+                <span className="flex items-center gap-2 min-w-0">
+                  {i === 0 && <span className="text-green-400 text-xs flex-shrink-0">▶</span>}
+                  {i > 0 && <span className="text-white/20 text-xs flex-shrink-0">{i + 1}.</span>}
+                  <span className="font-medium truncate">{n.title || n.text}</span>
+                </span>
+                <button onClick={() => clearSceneItem(n.id)} className="text-white/40 hover:text-red-400 ml-3 flex-shrink-0">✕</button>
+              </div>
+            ))}
           </div>
         )}
 
         {Object.entries(notifications?.players || {})
-          .filter(([, n]) => n !== null)
-          .map(([charId, n]) => {
+          .map(([charId, raw]) => {
+            const arr = Array.isArray(raw) ? raw : raw ? [raw] : [];
+            if (!arr.length) return null;
             const char = characters.find((c) => c.id === charId);
             return (
-              <div
-                key={charId}
-                className="flex items-center justify-between px-3 py-2 bg-white/10 rounded-lg text-sm"
-              >
-                <span>
-                  <span className="text-white/50 mr-2">👤 {char?.name ?? charId}</span>
-                  <span className="font-medium">{n.title || n.text}</span>
-                </span>
-                <button
-                  onClick={() => clearPlayer(charId)}
-                  className="text-white/40 hover:text-red-400 ml-3"
-                >
-                  ✕
-                </button>
+              <div key={charId} className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-white/40">👤 {char?.name ?? charId} ({arr.length})</span>
+                  <button onClick={() => clearPlayer(charId)} className="text-xs text-white/30 hover:text-red-400">очистить</button>
+                </div>
+                {arr.map(n => (
+                  <div key={n.id} className="flex items-center justify-between px-3 py-2 bg-white/10 rounded-lg text-sm">
+                    <span className="font-medium truncate">{n.title || n.text}</span>
+                  </div>
+                ))}
               </div>
             );
           })}
 
-        {!notifications?.scene &&
-          !Object.values(notifications?.players || {}).some(Boolean) && (
+        {sceneQueue.length === 0 &&
+          !Object.values(notifications?.players || {}).some(v => (Array.isArray(v) ? v.length : v)) && (
             <p className="text-sm text-white/30">Нет активных уведомлений</p>
           )}
       </div>

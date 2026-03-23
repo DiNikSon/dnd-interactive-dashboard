@@ -32,15 +32,22 @@ function useWakeLock() {
 
 export default function Scene() {
   useWakeLock();
-  const [data, , notifications, setNotifications, initiativeData, , widgets, , mapsData, , questsData] = useLPSync(
+  const [data, , notifications, , initiativeData, , widgets, , mapsData, , questsData] = useLPSync(
     "/sync/subscribe/",
     "/sync/set/",
     ["scene", "notifications", "initiative", "widgets", "maps", "quests"]
   );
   const [muted, setMuted] = useState(true);
 
-  const closeNotif = () =>
-    setNotifications((prev) => ({ ...prev, scene: null }));
+  const sceneQueue = Array.isArray(notifications?.scene)
+    ? notifications.scene
+    : notifications?.scene ? [notifications.scene] : [];
+
+  const [shownIds, setShownIds] = useState(new Set());
+  const currentNotif = sceneQueue.find(n => !shownIds.has(n.id));
+  const closeNotif = () => {
+    if (currentNotif) setShownIds(prev => new Set([...prev, currentNotif.id]));
+  };
 
   return <>
     <div
@@ -80,7 +87,7 @@ export default function Scene() {
       const q = (questsData?.items || []).find(x => x.id === data.activeQuestId);
       return q ? <QuestPopup quest={q} /> : null;
     })()}
-    <NotificationModal notification={notifications?.scene} onClose={closeNotif} closable={false} large />
+    <NotificationModal notification={currentNotif} onClose={closeNotif} closable={false} large />
   </>
 }
 

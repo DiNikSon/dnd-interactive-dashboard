@@ -1,6 +1,6 @@
 import { useState } from "react";
 import useLPSync from "@/hooks/useLPSync";
-import { NotificationModal } from "@/components/NotificationModal";
+import { NotificationCard } from "@/components/NotificationModal";
 import { generateUUID } from "@/utils/uuid.js";
 import { MARKER_TYPES, VISIBILITY_LABELS, getVisibleQuests, getQuestStatus } from "@/utils/questMap.js";
 import SimpleMarkdown from "@/components/SimpleMarkdown.jsx";
@@ -45,13 +45,16 @@ export default function Interactor() {
   const myChar = characters.find((c) => c.playerId === token);
   const freeChars = characters.filter((c) => !c.playerId && c.enabled !== false);
 
-  const myNotif = myChar ? notifications?.players?.[myChar.id] : null;
-  const closeNotif = () => {
+  const myNotifsRaw = myChar ? notifications?.players?.[myChar.id] : null;
+  const myNotifs = Array.isArray(myNotifsRaw) ? myNotifsRaw : myNotifsRaw ? [myNotifsRaw] : [];
+
+  const closeNotif = (id) => {
     if (!myChar) return;
-    setNotifications((prev) => ({
-      ...prev,
-      players: { ...(prev.players || {}), [myChar.id]: null },
-    }));
+    setNotifications((prev) => {
+      const current = prev?.players?.[myChar.id];
+      const arr = Array.isArray(current) ? current : current ? [current] : [];
+      return { ...prev, players: { ...(prev.players || {}), [myChar.id]: arr.filter(n => n.id !== id) } };
+    });
   };
 
   const claim = async (characterId) => {
@@ -133,7 +136,15 @@ export default function Interactor() {
           )}
         </div>
       </div>
-      <NotificationModal notification={myNotif} onClose={closeNotif} />
+      {myNotifs.length > 0 && (
+        <div className="fixed inset-0 z-50 bg-black/50 overflow-y-auto">
+          <div className="min-h-full flex flex-col items-center justify-start p-4 pt-8 gap-3">
+            {myNotifs.map(n => (
+              <NotificationCard key={n.id} notification={n} onClose={() => closeNotif(n.id)} />
+            ))}
+          </div>
+        </div>
+      )}
     </>
   );
 }
