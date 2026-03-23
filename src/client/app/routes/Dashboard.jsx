@@ -85,18 +85,25 @@ export default function Dashboard() {
               🧰 Саундпад
             </NavLink>
 
-            <NavLink
-              to="notification"
-              className={({ isActive }) =>
-                `block px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  isActive
-                    ? "bg-white/30 text-white shadow"
-                    : "text-white/80 hover:text-white hover:bg-white/10"
-                }`
-              }
-            >
-              🔔 Уведомление
-            </NavLink>
+            <div className="flex items-center gap-1">
+              <NavLink
+                to="notification"
+                className={({ isActive }) =>
+                  `flex-1 px-4 py-2 rounded-lg text-sm font-medium transition ${
+                    isActive
+                      ? "bg-white/30 text-white shadow"
+                      : "text-white/80 hover:text-white hover:bg-white/10"
+                  }`
+                }
+              >
+                🔔 Уведомление
+              </NavLink>
+              <button
+                onClick={() => fetch("/sync/set/notifications", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scene: [] }) })}
+                title="Очистить очередь"
+                className="px-2 py-2 rounded-lg text-white/30 hover:text-white hover:bg-white/10 text-xs transition flex-shrink-0"
+              >✕</button>
+            </div>
 
             <NavLink
               to="music"
@@ -189,18 +196,25 @@ export default function Dashboard() {
               🐉 Монстры
             </NavLink>
 
-            <NavLink
-              to="quests"
-              className={({ isActive }) =>
-                `block px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  isActive
-                    ? "bg-white/30 text-white shadow"
-                    : "text-white/80 hover:text-white hover:bg-white/10"
-                }`
-              }
-            >
-              📜 Задания
-            </NavLink>
+            <div className="flex items-center gap-1">
+              <NavLink
+                to="quests"
+                className={({ isActive }) =>
+                  `flex-1 px-4 py-2 rounded-lg text-sm font-medium transition ${
+                    isActive
+                      ? "bg-white/30 text-white shadow"
+                      : "text-white/80 hover:text-white hover:bg-white/10"
+                  }`
+                }
+              >
+                📜 Задания
+              </NavLink>
+              <button
+                onClick={() => setScene({ activeQuestId: null })}
+                title="Убрать задание со сцены"
+                className="px-2 py-2 rounded-lg text-white/30 hover:text-white hover:bg-white/10 text-xs transition flex-shrink-0"
+              >✕</button>
+            </div>
           </div>
 
           {/* Футер */}
