@@ -12,9 +12,27 @@ const RECOVERY_TYPES = [
 const DEFAULT_RESOURCE = {
   id: null, characterId: null, name: "", group: "",
   type: "numerical", value: 0, max: null,
+  denominations: [],
   recovery: { type: "long_rest", amount: "" },
   hidden: false,
 };
+
+// Разложить значение по деноминациям (от крупной к мелкой)
+function decompose(value, denominations) {
+  if (!denominations?.length) return [];
+  const sorted = [...denominations].sort((a, b) => b.base - a.base);
+  let remaining = Math.max(0, value || 0);
+  return sorted.map((d, i) => {
+    if (i === sorted.length - 1) {
+      const count = remaining;
+      remaining = 0;
+      return { ...d, count };
+    }
+    const count = Math.floor(remaining / d.base);
+    remaining -= count * d.base;
+    return { ...d, count };
+  });
+}
 
 export default function Resources() {
   const [resourcesData, setResourcesData] = useLPSync(
@@ -72,7 +90,6 @@ export default function Resources() {
   const openAdd = () => setEditResource({ ...DEFAULT_RESOURCE, characterId: selectedCharId });
   const openEdit = (r) => setEditResource({ ...r });
 
-  // Группировка ресурсов
   const grouped = groupResources(charResources);
 
   return (
@@ -215,7 +232,9 @@ function ResourceRow({ resource: r, compact, onEdit, onChange, onSetValue }) {
       </div>
 
       {/* Контрол */}
-      {r.type === "tally"
+      {r.type === "currency"
+        ? <CurrencyControl resource={r} onChange={onChange} />
+        : r.type === "tally"
         ? <TallyControl resource={r} onChange={onChange} compact={compact} />
         : <NumericalControl resource={r} onChange={onChange} onSetValue={onSetValue} compact={compact} />
       }
@@ -285,12 +304,129 @@ function TallyControl({ resource: r, onChange, compact }) {
   );
 }
 
+// ── Currency ──────────────────────────────────────────────────────────────────
+
+function CurrencyControl({ resource: r, onChange }) {
+  const [showModal, setShowModal] = useState(false);
+  const decomposed = decompose(r.value, r.denominations);
+
+  if (!decomposed.length) {
+    return <span className="text-white/30 text-xs italic">Нет деноминаций</span>;
+  }
+
+  return (
+    <>
+      <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
+        {decomposed.map(d => (
+          <div key={d.abbr} className="flex items-center gap-0.5">
+            <button
+              onClick={() => onChange(r.id, -d.base)}
+              className="w-5 h-5 rounded bg-white/10 hover:bg-white/20 text-sm leading-none transition flex items-center justify-center"
+            >−</button>
+            <span className="text-sm font-mono min-w-[1.5rem] text-center">{d.count}</span>
+            <span className="text-xs text-white/50 mr-0.5">{d.abbr}</span>
+            <button
+              onClick={() => onChange(r.id, d.base)}
+              className="w-5 h-5 rounded bg-white/10 hover:bg-white/20 text-sm leading-none transition flex items-center justify-center"
+            >+</button>
+          </div>
+        ))}
+        <button
+          onClick={() => setShowModal(true)}
+          className="px-2 py-0.5 bg-white/10 hover:bg-white/20 rounded text-xs text-white/60 hover:text-white transition ml-1"
+        >±</button>
+      </div>
+
+      {showModal && (
+        <CurrencyModal
+          denominations={decomposed}
+          onConfirm={(delta) => { onChange(r.id, delta); setShowModal(false); }}
+          onClose={() => setShowModal(false)}
+        />
+      )}
+    </>
+  );
+}
+
+function CurrencyModal({ denominations, onConfirm, onClose }) {
+  const [amounts, setAmounts] = useState(denominations.map(() => 0));
+
+  const delta = amounts.reduce((sum, amt, i) => sum + amt * denominations[i].base, 0);
+
+  const setAmount = (i, val) => {
+    const next = [...amounts];
+    next[i] = Math.max(0, parseInt(val) || 0);
+    setAmounts(next);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-gray-900 rounded-xl p-6 w-full max-w-sm space-y-5 text-white" onClick={e => e.stopPropagation()}>
+        <h3 className="text-base font-semibold">Трата / Получение</h3>
+
+        <div className="flex gap-4 flex-wrap">
+          {denominations.map((d, i) => (
+            <div key={d.abbr} className="flex flex-col items-center gap-1.5">
+              <span className="text-xs text-white/40">{d.name || d.abbr}</span>
+              <input
+                type="number"
+                min={0}
+                value={amounts[i]}
+                onChange={e => setAmount(i, e.target.value)}
+                className="w-16 text-center px-2 py-1.5 bg-white/10 rounded-lg border border-white/20 text-sm outline-none"
+              />
+              <span className="text-xs text-white/50">{d.abbr}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => delta > 0 && onConfirm(-delta)}
+            disabled={delta === 0}
+            className="flex-1 py-2 bg-red-600/70 hover:bg-red-600 disabled:opacity-30 rounded-lg text-sm transition"
+          >
+            Потратить
+          </button>
+          <button
+            onClick={() => delta > 0 && onConfirm(delta)}
+            disabled={delta === 0}
+            className="flex-1 py-2 bg-green-600/70 hover:bg-green-600 disabled:opacity-30 rounded-lg text-sm transition"
+          >
+            Получить
+          </button>
+        </div>
+
+        <button
+          onClick={onClose}
+          className="w-full py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-white/50 transition"
+        >
+          Отмена
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Панель редактирования ─────────────────────────────────────────────────────
 
 function ResourceEditPanel({ resource, onSave, onClose, onDelete }) {
-  const [form, setForm] = useState({ ...resource });
+  const [form, setForm] = useState({ ...resource, denominations: resource.denominations || [] });
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
   const setRecovery = (key, val) => setForm(f => ({ ...f, recovery: { ...f.recovery, [key]: val } }));
+
+  const addDenom = () => setForm(f => ({
+    ...f,
+    denominations: [...f.denominations, { name: "", abbr: "", base: 1 }],
+  }));
+  const removeDenom = (i) => setForm(f => ({
+    ...f,
+    denominations: f.denominations.filter((_, j) => j !== i),
+  }));
+  const updateDenom = (i, key, val) => setForm(f => ({
+    ...f,
+    denominations: f.denominations.map((d, j) => j === i ? { ...d, [key]: val } : d),
+  }));
 
   return (
     <div className="w-80 flex-shrink-0 flex flex-col bg-white/5 rounded-xl overflow-hidden">
@@ -325,7 +461,8 @@ function ResourceEditPanel({ resource, onSave, onClose, onDelete }) {
           <div className="flex gap-2">
             {[
               { key: "numerical", label: "Numerical" },
-              { key: "tally", label: "Tally" },
+              { key: "tally",     label: "Tally" },
+              { key: "currency",  label: "Currency" },
             ].map(t => (
               <button key={t.key} type="button" onClick={() => set("type", t.key)}
                 className={`flex-1 py-1.5 rounded-lg text-xs transition ${
@@ -336,13 +473,65 @@ function ResourceEditPanel({ resource, onSave, onClose, onDelete }) {
           </div>
         </div>
 
+        {/* Деноминации (только для currency) */}
+        {form.type === "currency" && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs text-white/50">Деноминации</label>
+              <button
+                type="button"
+                onClick={addDenom}
+                className="text-xs px-2 py-0.5 bg-white/10 hover:bg-white/20 rounded transition"
+              >+ Добавить</button>
+            </div>
+            {form.denominations.length === 0 && (
+              <p className="text-white/30 text-xs mb-2">Добавь хотя бы одну деноминацию</p>
+            )}
+            <div className="space-y-1.5">
+              {form.denominations.map((d, i) => (
+                <div key={i} className="flex gap-1.5 items-center">
+                  <input
+                    value={d.name}
+                    onChange={e => updateDenom(i, "name", e.target.value)}
+                    placeholder="Золото"
+                    className="flex-1 px-2 py-1 bg-white/10 rounded border border-white/20 text-xs outline-none"
+                  />
+                  <input
+                    value={d.abbr}
+                    onChange={e => updateDenom(i, "abbr", e.target.value)}
+                    placeholder="зм"
+                    className="w-10 px-2 py-1 bg-white/10 rounded border border-white/20 text-xs outline-none text-center"
+                  />
+                  <input
+                    type="number"
+                    min={1}
+                    value={d.base}
+                    onChange={e => updateDenom(i, "base", Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-14 px-2 py-1 bg-white/10 rounded border border-white/20 text-xs outline-none text-center"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeDenom(i)}
+                    className="text-white/30 hover:text-red-400 transition px-1 text-sm"
+                  >✕</button>
+                </div>
+              ))}
+            </div>
+            {form.denominations.length > 0 && (
+              <p className="text-white/20 text-[10px] mt-1.5">Название · Сокр. · Базовая стоимость (в наименьших ед.)</p>
+            )}
+          </div>
+        )}
+
         {/* Значение / Максимум */}
         <div className="flex gap-2">
-          <div className="flex-1">
-            <label className="block text-xs text-white/50 mb-1">Текущее</label>
-            <input type="number" min={0} value={form.value} onChange={e => set("value", Math.max(0, parseInt(e.target.value) || 0))}
-              className="w-full px-3 py-2 bg-white/10 rounded-lg border border-white/20 outline-none text-sm" />
-          </div>
+          {form.type !== "currency" && (
+            <div className="flex-1">
+              <label className="block text-xs text-white/50 mb-1">Текущее</label>
+              <input type="number" min={0} value={form.value} onChange={e => set("value", Math.max(0, parseInt(e.target.value) || 0))}
+                className="w-full px-3 py-2 bg-white/10 rounded-lg border border-white/20 outline-none text-sm" />
+            </div>
+          )}
           <div className="flex-1">
             <label className="block text-xs text-white/50 mb-1">Максимум</label>
             <input
