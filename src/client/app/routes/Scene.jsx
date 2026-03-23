@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import useLPSync from "@/hooks/useLPSync";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { NotificationModal } from "@/components/NotificationModal";
@@ -67,15 +67,100 @@ export default function Scene() {
 }
 
 function QuestPopup({ quest }) {
+  const clipRef = useRef(null);
+  const contentRef = useRef(null);
+
+  useEffect(() => {
+    const clip = clipRef.current;
+    const content = contentRef.current;
+    if (!clip || !content) return;
+
+    const SPEED = 28; // px/sec
+    const PAUSE_START = 2500;
+    const PAUSE_END = 3000;
+    const FADE_DURATION = 700; // ms
+
+    let offset = 0;
+    let lastTime = null;
+    let animId;
+    let timeoutId;
+    let phase = "pause_start"; // "pause_start" | "scroll" | "fade_out" | "fade_in"
+    let phaseStart = performance.now();
+
+    content.style.transform = "translateY(0px)";
+    content.style.opacity = "1";
+
+    const startFadeOut = () => {
+      phase = "fade_out";
+      phaseStart = performance.now();
+      animId = requestAnimationFrame(tick);
+    };
+
+    const tick = (timestamp) => {
+      const maxOffset = content.offsetHeight - clip.clientHeight;
+
+      if (phase === "pause_start") {
+        lastTime = null;
+        if (timestamp - phaseStart >= PAUSE_START) { phase = "scroll"; }
+        animId = requestAnimationFrame(tick);
+        return;
+      }
+
+      if (phase === "scroll") {
+        if (maxOffset <= 0) return;
+        if (offset >= maxOffset) {
+          phase = "waiting";
+          timeoutId = setTimeout(startFadeOut, PAUSE_END);
+          return; // RAF остановлен до таймаута
+        }
+        if (lastTime !== null) {
+          offset = Math.min(offset + SPEED * (timestamp - lastTime) / 1000, maxOffset);
+          content.style.transform = `translateY(-${offset}px)`;
+        }
+        lastTime = timestamp;
+        animId = requestAnimationFrame(tick);
+        return;
+      }
+
+      if (phase === "fade_out") {
+        const t = Math.min((timestamp - phaseStart) / FADE_DURATION, 1);
+        content.style.opacity = String(1 - t);
+        if (t >= 1) {
+          offset = 0;
+          content.style.transform = "translateY(0px)";
+          phase = "fade_in";
+          phaseStart = timestamp;
+        }
+        animId = requestAnimationFrame(tick);
+        return;
+      }
+
+      if (phase === "fade_in") {
+        const t = Math.min((timestamp - phaseStart) / FADE_DURATION, 1);
+        content.style.opacity = String(t);
+        if (t >= 1) {
+          content.style.opacity = "1";
+          phase = "pause_start";
+          phaseStart = timestamp;
+        }
+        animId = requestAnimationFrame(tick);
+        return;
+      }
+    };
+
+    animId = requestAnimationFrame(tick);
+    return () => { cancelAnimationFrame(animId); clearTimeout(timeoutId); };
+  }, [quest.id]);
+
+  const text = getQuestStatus(quest) === "available" ? quest.availableDescription : quest.description;
+
   return (
     <div className="fixed inset-0 flex items-center justify-center z-[45] pointer-events-none">
       <div
-        className="pointer-events-none text-white"
+        className="pointer-events-none text-white flex flex-col"
         style={{
           width: "44vw",
-          minHeight: "28vh",
           maxHeight: "65vh",
-          padding: "3vw 3.5vw",
           background: "linear-gradient(160deg, #1a120a 0%, #0e0a06 100%)",
           border: "1px solid rgba(180,130,60,0.45)",
           borderRadius: "1.2vw",
@@ -83,15 +168,20 @@ function QuestPopup({ quest }) {
           overflow: "hidden",
         }}
       >
-        <div style={{ borderBottom: "1px solid rgba(180,130,60,0.25)", paddingBottom: "1vw", marginBottom: "1.2vw" }}>
+        {/* Title — фиксированный */}
+        <div style={{ padding: "2vw 3.5vw 1vw", borderBottom: "1px solid rgba(180,130,60,0.25)", flexShrink: 0 }}>
           <h2 style={{ fontSize: "2.2vw", fontWeight: 700, letterSpacing: "0.03em", color: "#e8c97a" }}>
             {quest.title}
           </h2>
         </div>
-        {(() => {
-          const text = getQuestStatus(quest) === "available" ? quest.availableDescription : quest.description;
-          return text ? <SimpleMarkdown text={text} className="text-white/75" style={{ fontSize: "1.35vw", lineHeight: 1.6 }} /> : null;
-        })()}
+        {/* Clip-область — overflow hidden, transform двигает контент */}
+        <div ref={clipRef} style={{ flex: 1, overflow: "hidden" }}>
+          <div ref={contentRef} style={{ willChange: "transform", padding: "1.2vw 3.5vw 2vw" }}>
+            {text
+              ? <SimpleMarkdown text={text} className="text-white/75" style={{ fontSize: "1.35vw", lineHeight: 1.6 }} />
+              : null}
+          </div>
+        </div>
       </div>
     </div>
   );
