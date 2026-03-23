@@ -3,6 +3,7 @@ import useLPSync from "@/hooks/useLPSync";
 import { NotificationCard } from "@/components/NotificationModal";
 import { generateUUID } from "@/utils/uuid.js";
 import { MARKER_TYPES, VISIBILITY_LABELS, getVisibleQuests, getQuestStatus } from "@/utils/questMap.js";
+import { applyRecovery, groupResources, GroupBlock, ResourceRow } from "@/components/ResourceControls.jsx";
 import SimpleMarkdown from "@/components/SimpleMarkdown.jsx";
 
 export function meta() {
@@ -27,11 +28,12 @@ export default function Interactor() {
     charsData,,
     notifications, setNotifications,
     mapsData,,
-    questsData,
+    questsData,,
+    resourcesData, setResourcesData,
   ] = useLPSync(
     "/sync/subscribe/",
     "/sync/set/",
-    ["scene", "characters", "notifications", "maps", "quests"]
+    ["scene", "characters", "notifications", "maps", "quests", "resources"]
   );
 
   const characters = charsData?.list || [];
@@ -90,7 +92,7 @@ export default function Interactor() {
           {myChar ? (
             <div className="flex-1 flex flex-col min-h-0 h-screen">
               {/* Content area */}
-              <div className="flex-1 overflow-y-auto min-h-0">
+              <div className={`flex-1 overflow-y-auto min-h-0 ${activeTab === "resources" ? "bg-black/50 backdrop-blur-sm" : ""}`}>
                 {activeTab === "map" && (
                   <MapTab maps={maps} quests={quests} setScene={setScene} showCompleted={!!data?.showCompletedOnMap} sceneActive={data?.active} sceneMapId={data?.activeMapId} />
                 )}
@@ -102,6 +104,13 @@ export default function Interactor() {
                     <PlayerView char={myChar} onRelease={release} />
                   </div>
                 )}
+                {activeTab === "resources" && (
+                  <ResourcesTab
+                    charId={myChar.id}
+                    resourcesData={resourcesData}
+                    setResourcesData={setResourcesData}
+                  />
+                )}
               </div>
 
               {/* Bottom nav */}
@@ -109,6 +118,7 @@ export default function Interactor() {
                 {[
                   { key: "map", label: "🗺 Карта" },
                   { key: "quests", label: "📜 Задания" },
+                  { key: "resources", label: "🎒 Ресурсы" },
                   { key: "character", label: "👤 Персонаж" },
                 ].map((tab) => (
                   <button
@@ -457,6 +467,70 @@ function QuestDetail({ quest, onClose, setScene }) {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Resources Tab ── */
+function ResourcesTab({ charId, resourcesData, setResourcesData }) {
+  const allItems = resourcesData?.items || [];
+  const resources = allItems.filter(r => r.characterId === charId && !r.hidden);
+
+  const update = (id, newVal) =>
+    setResourcesData({ items: allItems.map(x => x.id === id ? { ...x, value: newVal } : x) });
+
+  const handleChange = (id, delta) => {
+    const r = allItems.find(x => x.id === id);
+    if (!r) return;
+    update(id, r.max != null ? Math.max(0, Math.min(r.max, r.value + delta)) : Math.max(0, r.value + delta));
+  };
+
+  const handleSetValue = (id, val) => {
+    const r = allItems.find(x => x.id === id);
+    if (!r) return;
+    update(id, r.max != null ? Math.max(0, Math.min(r.max, Number(val) || 0)) : Math.max(0, Number(val) || 0));
+  };
+
+  const handleRecover = (id) => {
+    const r = allItems.find(x => x.id === id);
+    if (!r) return;
+    const newVal = applyRecovery(r, "manual");
+    if (newVal !== null) update(id, newVal);
+  };
+
+  const handleRest = (restType) => {
+    const newItems = allItems.map(r => {
+      if (r.characterId !== charId) return r;
+      const newVal = applyRecovery(r, restType);
+      return newVal !== null ? { ...r, value: newVal } : r;
+    });
+    setResourcesData({ items: newItems });
+  };
+
+  const grouped = groupResources(resources);
+
+  return (
+    <div className="p-4 space-y-4">
+      <div className="flex gap-2">
+        <button
+          onClick={() => handleRest("short_rest")}
+          className="flex-1 py-2 bg-amber-600/50 hover:bg-amber-600/80 rounded-lg text-sm transition"
+        >Короткий отдых</button>
+        <button
+          onClick={() => handleRest("long_rest")}
+          className="flex-1 py-2 bg-blue-600/50 hover:bg-blue-600/80 rounded-lg text-sm transition"
+        >Длинный отдых</button>
+      </div>
+      {resources.length === 0 && (
+        <p className="text-white/40 text-sm">Нет ресурсов</p>
+      )}
+      {grouped.map((group, gi) =>
+        group.isGroup ? (
+          <GroupBlock key={group.name + gi} group={group} onChange={handleChange} onSetValue={handleSetValue} onRecover={handleRecover} editable={false} />
+        ) : (
+          <ResourceRow key={group.item.id} resource={group.item} onChange={handleChange} onSetValue={handleSetValue} onRecover={handleRecover} editable={false} />
+        )
+      )}
     </div>
   );
 }
