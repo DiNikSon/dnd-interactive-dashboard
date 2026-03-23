@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import useLPSync from "@/hooks/useLPSync";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { NotificationModal } from "@/components/NotificationModal";
@@ -13,7 +13,25 @@ export function meta({}) {
   ];
 }
 
+function useWakeLock() {
+  useEffect(() => {
+    if (!("wakeLock" in navigator)) return;
+    let lock = null;
+    const acquire = async () => {
+      try { lock = await navigator.wakeLock.request("screen"); } catch {}
+    };
+    acquire();
+    const onVisible = () => { if (document.visibilityState === "visible") acquire(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      lock?.release();
+    };
+  }, []);
+}
+
 export default function Scene() {
+  useWakeLock();
   const [data, , notifications, setNotifications, initiativeData, , widgets, , mapsData, , questsData] = useLPSync(
     "/sync/subscribe/",
     "/sync/set/",
