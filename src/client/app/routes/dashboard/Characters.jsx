@@ -70,7 +70,7 @@ export default function Characters() {
             type: "numerical",
             value: maxHp ?? 0,
             max: maxHp,
-            recovery: { type: "long_rest", amount: "1000" },
+            recovery: [{ type: "long_rest", amount: "1000" }],
             hidden: false,
           },
         ],
@@ -89,7 +89,7 @@ export default function Characters() {
       if (hpRes) {
         setResourcesData({ items: existingResources.map(r => r.id === hpRes.id ? { ...r, max: maxHp } : r) });
       } else {
-        setResourcesData({ items: [...existingResources, { id: generateUUID(), characterId: editingId, name: "Здоровье", group: "", type: "numerical", value: maxHp ?? 0, max: maxHp, recovery: { type: "long_rest", amount: "1000" }, hidden: false }] });
+        setResourcesData({ items: [...existingResources, { id: generateUUID(), characterId: editingId, name: "Здоровье", group: "", type: "numerical", value: maxHp ?? 0, max: maxHp, recovery: [{ type: "long_rest", amount: "1000" }], hidden: false }] });
       }
     }
     setEditingId(null);

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import useLPSync from "@/hooks/useLPSync";
 import { generateUUID } from "@/utils/uuid.js";
+import { evalDiceString } from "@/utils/dice.js";
 
 const RECOVERY_TYPES = [
   { key: "long_rest",  label: "Длинный отдых" },
@@ -13,9 +14,31 @@ const DEFAULT_RESOURCE = {
   id: null, characterId: null, name: "", group: "",
   type: "numerical", value: 0, max: null,
   denominations: [],
-  recovery: { type: "long_rest", amount: "" },
+  recovery: [],
   hidden: false,
 };
+
+// Нормализовать recovery в массив (совместимость со старым форматом объекта)
+function normalizeRecovery(r) {
+  if (!r) return [];
+  if (Array.isArray(r)) return r;
+  return [r];
+}
+
+// Посчитать сколько восстановить по одной записи recovery
+function calcRecoveryDelta(rec, resource) {
+  if (!rec.amount) return resource.max != null ? resource.max - resource.value : 0;
+  try { return evalDiceString(String(rec.amount)).total; } catch { return 0; }
+}
+
+// Применить восстановление нужного типа к ресурсу, вернуть новое значение
+function applyRecovery(resource, filterType) {
+  const recs = normalizeRecovery(resource.recovery).filter(r => r.type === filterType);
+  if (!recs.length) return null; // не затронут
+  let newVal = resource.value;
+  for (const rec of recs) newVal += calcRecoveryDelta(rec, resource);
+  return resource.max != null ? Math.min(resource.max, Math.max(0, newVal)) : Math.max(0, newVal);
+}
 
 // Разложить значение по деноминациям (от крупной к мелкой)
 function decompose(value, denominations) {
@@ -87,6 +110,21 @@ export default function Resources() {
     save(resources.map(x => x.id === id ? { ...x, value: newVal } : x));
   };
 
+  const handleRest = (restType) => {
+    save(resources.map(r => {
+      if (r.characterId !== selectedCharId) return r;
+      const newVal = applyRecovery(r, restType);
+      return newVal !== null ? { ...r, value: newVal } : r;
+    }));
+  };
+
+  const handleManualRecover = (id) => {
+    const r = resources.find(x => x.id === id);
+    if (!r) return;
+    const newVal = applyRecovery(r, "manual");
+    if (newVal !== null) save(resources.map(x => x.id === id ? { ...x, value: newVal } : x));
+  };
+
   const openAdd = () => setEditResource({ ...DEFAULT_RESOURCE, characterId: selectedCharId });
   const openEdit = (r) => setEditResource({ ...r });
 
@@ -122,17 +160,25 @@ export default function Resources() {
           <p className="text-white/30 text-sm">Выбери персонажа слева</p>
         ) : (
           <>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: selectedChar.color }} />
                 <h2 className="font-semibold">{selectedChar.name}</h2>
               </div>
-              <button
-                onClick={openAdd}
-                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm transition"
-              >
-                + Добавить
-              </button>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => handleRest("short_rest")}
+                  className="px-3 py-1.5 bg-amber-600/50 hover:bg-amber-600/80 rounded-lg text-sm transition"
+                >Короткий отдых</button>
+                <button
+                  onClick={() => handleRest("long_rest")}
+                  className="px-3 py-1.5 bg-blue-600/50 hover:bg-blue-600/80 rounded-lg text-sm transition"
+                >Длинный отдых</button>
+                <button
+                  onClick={openAdd}
+                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm transition"
+                >+ Добавить</button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-4">
@@ -141,9 +187,9 @@ export default function Resources() {
               )}
               {grouped.map((group, gi) =>
                 group.isGroup ? (
-                  <GroupBlock key={group.name + gi} group={group} onEdit={openEdit} onChange={handleChange} onSetValue={handleSetValue} />
+                  <GroupBlock key={group.name + gi} group={group} onEdit={openEdit} onChange={handleChange} onSetValue={handleSetValue} onRecover={handleManualRecover} />
                 ) : (
-                  <ResourceRow key={group.item.id} resource={group.item} onEdit={openEdit} onChange={handleChange} onSetValue={handleSetValue} />
+                  <ResourceRow key={group.item.id} resource={group.item} onEdit={openEdit} onChange={handleChange} onSetValue={handleSetValue} onRecover={handleManualRecover} />
                 )
               )}
             </div>
@@ -197,7 +243,7 @@ function groupResources(resources) {
 
 // ── Групповой блок ────────────────────────────────────────────────────────────
 
-function GroupBlock({ group, onEdit, onChange, onSetValue }) {
+function GroupBlock({ group, onEdit, onChange, onSetValue, onRecover }) {
   return (
     <div className="bg-white/5 rounded-xl overflow-hidden">
       <div className="px-4 py-2 border-b border-white/10">
@@ -205,7 +251,7 @@ function GroupBlock({ group, onEdit, onChange, onSetValue }) {
       </div>
       <div className="divide-y divide-white/5">
         {group.items.map(r => (
-          <ResourceRow key={r.id} resource={r} compact onEdit={onEdit} onChange={onChange} onSetValue={onSetValue} />
+          <ResourceRow key={r.id} resource={r} compact onEdit={onEdit} onChange={onChange} onSetValue={onSetValue} onRecover={onRecover} />
         ))}
       </div>
     </div>
@@ -214,9 +260,12 @@ function GroupBlock({ group, onEdit, onChange, onSetValue }) {
 
 // ── Строка ресурса ────────────────────────────────────────────────────────────
 
-function ResourceRow({ resource: r, compact, onEdit, onChange, onSetValue }) {
-  const recoveryLabel = RECOVERY_TYPES.find(x => x.key === r.recovery?.type)?.label || "";
-  const recoveryText = [recoveryLabel, r.recovery?.amount].filter(Boolean).join(" ");
+function ResourceRow({ resource: r, compact, onEdit, onChange, onSetValue, onRecover }) {
+  const recoveries = normalizeRecovery(r.recovery);
+  const recoveryText = recoveries
+    .map(rec => [RECOVERY_TYPES.find(x => x.key === rec.type)?.label, rec.amount].filter(Boolean).join(" "))
+    .join(" · ");
+  const hasManual = recoveries.some(rec => rec.type === "manual");
 
   return (
     <div className={`flex items-center gap-3 ${compact ? "px-4 py-2" : "bg-white/5 rounded-xl px-4 py-3"}`}>
@@ -238,6 +287,15 @@ function ResourceRow({ resource: r, compact, onEdit, onChange, onSetValue }) {
         ? <TallyControl resource={r} onChange={onChange} compact={compact} />
         : <NumericalControl resource={r} onChange={onChange} onSetValue={onSetValue} compact={compact} />
       }
+
+      {/* Кнопка ручного восстановления */}
+      {hasManual && (
+        <button
+          onClick={() => onRecover(r.id)}
+          className="text-xs px-2 py-1 bg-green-600/40 hover:bg-green-600/70 rounded transition flex-shrink-0"
+          title="Восстановить (вручную)"
+        >↑</button>
+      )}
 
       {/* Кнопка редактирования */}
       <button
@@ -411,9 +469,19 @@ function CurrencyModal({ denominations, onConfirm, onClose }) {
 // ── Панель редактирования ─────────────────────────────────────────────────────
 
 function ResourceEditPanel({ resource, onSave, onClose, onDelete }) {
-  const [form, setForm] = useState({ ...resource, denominations: resource.denominations || [] });
+  const [form, setForm] = useState({
+    ...resource,
+    denominations: resource.denominations || [],
+    recovery: normalizeRecovery(resource.recovery),
+  });
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
-  const setRecovery = (key, val) => setForm(f => ({ ...f, recovery: { ...f.recovery, [key]: val } }));
+
+  const addRecovery = () => setForm(f => ({ ...f, recovery: [...f.recovery, { type: "long_rest", amount: "" }] }));
+  const removeRecovery = (i) => setForm(f => ({ ...f, recovery: f.recovery.filter((_, j) => j !== i) }));
+  const updateRecovery = (i, key, val) => setForm(f => ({
+    ...f,
+    recovery: f.recovery.map((rec, j) => j === i ? { ...rec, [key]: val } : rec),
+  }));
 
   const addDenom = () => setForm(f => ({
     ...f,
@@ -546,14 +614,35 @@ function ResourceEditPanel({ resource, onSave, onClose, onDelete }) {
 
         {/* Восстановление */}
         <div>
-          <label className="block text-xs text-white/50 mb-1">Восстановление</label>
-          <select value={form.recovery.type} onChange={e => setRecovery("type", e.target.value)}
-            className="w-full px-3 py-2 bg-gray-800 text-white rounded-lg border border-white/20 outline-none text-sm mb-2">
-            {RECOVERY_TYPES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
-          </select>
-          <input value={form.recovery.amount} onChange={e => setRecovery("amount", e.target.value)}
-            className="w-full px-3 py-2 bg-white/10 rounded-lg border border-white/20 outline-none text-sm"
-            placeholder="Кол-во (число или 2d6)" />
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs text-white/50">Восстановление</label>
+            <button type="button" onClick={addRecovery}
+              className="text-xs px-2 py-0.5 bg-white/10 hover:bg-white/20 rounded transition">
+              + Добавить
+            </button>
+          </div>
+          {form.recovery.length === 0 && (
+            <p className="text-white/20 text-xs">Нет восстановлений</p>
+          )}
+          <div className="space-y-2">
+            {form.recovery.map((rec, i) => (
+              <div key={i} className="flex gap-1.5 items-start">
+                <div className="flex-1 space-y-1">
+                  <select value={rec.type} onChange={e => updateRecovery(i, "type", e.target.value)}
+                    className="w-full px-2 py-1.5 bg-gray-800 text-white rounded-lg border border-white/20 outline-none text-xs">
+                    {RECOVERY_TYPES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
+                  </select>
+                  <input value={rec.amount} onChange={e => updateRecovery(i, "amount", e.target.value)}
+                    className="w-full px-2 py-1.5 bg-white/10 rounded-lg border border-white/20 outline-none text-xs"
+                    placeholder="Кол-во (число или 2d6)" />
+                </div>
+                <button type="button" onClick={() => removeRecovery(i)}
+                  className="text-white/30 hover:text-red-400 transition px-1 pt-1.5 text-sm flex-shrink-0">
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Скрытый */}
