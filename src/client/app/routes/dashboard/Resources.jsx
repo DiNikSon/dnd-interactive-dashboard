@@ -11,7 +11,7 @@ const RECOVERY_TYPES = [
 
 const DEFAULT_RESOURCE = {
   id: null, characterId: null, name: "", group: "",
-  type: "numerical", value: 0, max: 10,
+  type: "numerical", value: 0, max: null,
   recovery: { type: "long_rest", amount: "" },
   hidden: false,
 };
@@ -54,14 +54,18 @@ export default function Resources() {
   const handleChange = (id, delta) => {
     const r = resources.find(x => x.id === id);
     if (!r) return;
-    const newVal = Math.max(0, Math.min(r.max, r.value + delta));
+    const newVal = r.max != null
+      ? Math.max(0, Math.min(r.max, r.value + delta))
+      : Math.max(0, r.value + delta);
     save(resources.map(x => x.id === id ? { ...x, value: newVal } : x));
   };
 
   const handleSetValue = (id, val) => {
     const r = resources.find(x => x.id === id);
     if (!r) return;
-    const newVal = Math.max(0, Math.min(r.max, Number(val) || 0));
+    const newVal = r.max != null
+      ? Math.max(0, Math.min(r.max, Number(val) || 0))
+      : Math.max(0, Number(val) || 0);
     save(resources.map(x => x.id === id ? { ...x, value: newVal } : x));
   };
 
@@ -242,7 +246,7 @@ function NumericalControl({ resource: r, onChange, onSetValue, compact }) {
         onChange={e => onSetValue(r.id, e.target.value)}
         className={`text-center bg-white/10 rounded border border-white/20 outline-none ${compact ? "w-10 text-xs py-0.5" : "w-12 text-sm py-1"}`}
       />
-      <span className="text-white/30 text-xs">/{r.max}</span>
+      {r.max != null && <span className="text-white/30 text-xs">/{r.max}</span>}
       <button
         onClick={() => onChange(r.id, 1)}
         className="w-6 h-6 rounded bg-white/10 hover:bg-white/20 text-white text-sm leading-none transition flex items-center justify-center"
@@ -341,8 +345,13 @@ function ResourceEditPanel({ resource, onSave, onClose, onDelete }) {
           </div>
           <div className="flex-1">
             <label className="block text-xs text-white/50 mb-1">Максимум</label>
-            <input type="number" min={1} value={form.max} onChange={e => set("max", Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-full px-3 py-2 bg-white/10 rounded-lg border border-white/20 outline-none text-sm" />
+            <input
+              type="number" min={1}
+              value={form.max ?? ""}
+              onChange={e => set("max", e.target.value === "" ? null : Math.max(1, parseInt(e.target.value) || 1))}
+              placeholder="∞"
+              className="w-full px-3 py-2 bg-white/10 rounded-lg border border-white/20 outline-none text-sm"
+            />
           </div>
         </div>
 

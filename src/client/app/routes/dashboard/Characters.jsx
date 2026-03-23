@@ -15,10 +15,14 @@ export default function Characters() {
     "/sync/subscribe/characters",
     "/sync/set/characters"
   );
+  const [resourcesData, setResourcesData] = useLPSync(
+    "/sync/subscribe/resources",
+    "/sync/set/resources"
+  );
   const characters = charsData?.list || [];
 
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ name: "", initiative: 0, color: COLORS[0] });
+  const [form, setForm] = useState({ name: "", initiative: 0, color: COLORS[0], maxHp: "" });
 
   const saveChars = (newList) => setCharsData({ list: newList });
 
@@ -27,12 +31,13 @@ export default function Characters() {
   // ===========================
   const startCreate = () => {
     setEditingId("new");
-    setForm({ name: "", initiative: 0, color: COLORS[characters.length % COLORS.length] });
+    setForm({ name: "", initiative: 0, color: COLORS[characters.length % COLORS.length], maxHp: "" });
   };
 
   const startEdit = (char) => {
     setEditingId(char.id);
-    setForm({ name: char.name, initiative: char.initiative, color: char.color });
+    const hpRes = (resourcesData?.items || []).find(r => r.characterId === char.id && r.name === "Здоровье");
+    setForm({ name: char.name, initiative: char.initiative, color: char.color, maxHp: hpRes?.max ?? "" });
   };
 
   const cancelEdit = () => setEditingId(null);
@@ -40,10 +45,11 @@ export default function Characters() {
   const saveEdit = () => {
     if (!form.name.trim()) return;
     if (editingId === "new") {
+      const charId = generateUUID();
       saveChars([
         ...characters,
         {
-          id: generateUUID(),
+          id: charId,
           name: form.name.trim(),
           initiative: Number(form.initiative),
           color: form.color,
@@ -51,6 +57,24 @@ export default function Characters() {
           enabled: true,
         },
       ]);
+      const existingResources = resourcesData?.items || [];
+      const maxHp = form.maxHp !== "" ? (parseInt(form.maxHp) || null) : null;
+      setResourcesData({
+        items: [
+          ...existingResources,
+          {
+            id: generateUUID(),
+            characterId: charId,
+            name: "Здоровье",
+            group: "",
+            type: "numerical",
+            value: maxHp ?? 0,
+            max: maxHp,
+            recovery: { type: "long_rest", amount: "1000" },
+            hidden: false,
+          },
+        ],
+      });
     } else {
       saveChars(
         characters.map((c) =>
@@ -59,6 +83,14 @@ export default function Characters() {
             : c
         )
       );
+      const maxHp = form.maxHp !== "" ? (parseInt(form.maxHp) || null) : null;
+      const existingResources = resourcesData?.items || [];
+      const hpRes = existingResources.find(r => r.characterId === editingId && r.name === "Здоровье");
+      if (hpRes) {
+        setResourcesData({ items: existingResources.map(r => r.id === hpRes.id ? { ...r, max: maxHp } : r) });
+      } else {
+        setResourcesData({ items: [...existingResources, { id: generateUUID(), characterId: editingId, name: "Здоровье", group: "", type: "numerical", value: maxHp ?? 0, max: maxHp, recovery: { type: "long_rest", amount: "1000" }, hidden: false }] });
+      }
     }
     setEditingId(null);
   };
@@ -120,6 +152,16 @@ export default function Characters() {
                 value={form.initiative}
                 onChange={(e) => setForm((f) => ({ ...f, initiative: e.target.value }))}
                 className="w-20 px-3 py-1.5 bg-white/10 rounded border border-white/20 outline-none text-sm"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-white/70">Макс Здоровье</label>
+              <input
+                type="number"
+                placeholder="∞"
+                value={form.maxHp}
+                onChange={(e) => setForm((f) => ({ ...f, maxHp: e.target.value }))}
+                className="w-24 px-3 py-1.5 bg-white/10 rounded border border-white/20 outline-none text-sm"
               />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
