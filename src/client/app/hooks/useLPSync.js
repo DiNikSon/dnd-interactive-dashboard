@@ -74,8 +74,8 @@ function useLPSyncMulti(subUrl, setUrl, keys) {
   const abortRef = useRef(null);
 
   function set(newData, key){
-    let updatedData = {...data}
-    updatedData[key] =  {...updatedData[key], ...((typeof newData === 'function')?newData(updatedData[key]):newData)}
+    let updatedData = {...(data ?? {})}
+    updatedData[key] =  {...(updatedData[key] ?? {}), ...((typeof newData === 'function')?newData(updatedData[key] ?? {}):newData)}
     localUpdateRef.current = fetch(setUrl + key, {
       method: 'PUT',
       body: JSON.stringify(updatedData[key]),
@@ -111,7 +111,7 @@ function useLPSyncMulti(subUrl, setUrl, keys) {
   }, [subUrl, data]); // ✅ зависим от data, чтобы хэш пересчитывался
 
 
-  return keys.flatMap(k=>[data[k],(v)=>set(v,k)]);
+  return keys.flatMap(k=>[(data ?? {})[k],(v)=>set(v,k)]);
 }
 
 async function subscribe(url, params, responseHandler, errorHandler, signal, failCount = 0) {

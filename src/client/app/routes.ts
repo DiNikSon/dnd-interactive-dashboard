@@ -14,6 +14,7 @@ export default [
         route("image", "routes/dashboard/ShowImage.jsx"),
         route("maps", "routes/dashboard/Maps.jsx"),
         route("quests", "routes/dashboard/Quests.jsx"),
+        route("monsters", "routes/dashboard/Monsters.jsx"),
     ]),
     route("scene", "routes/Scene.jsx"),
 ];
