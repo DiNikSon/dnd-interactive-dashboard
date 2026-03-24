@@ -32,10 +32,10 @@ function useWakeLock() {
 
 export default function Scene() {
   useWakeLock();
-  const [data, , notifications, , initiativeData, , widgets, , mapsData, , questsData] = useLPSync(
+  const [data, , notifications, , initiativeData, , widgets, , mapsData, , questsData, , resourcesData] = useLPSync(
     "/sync/subscribe/",
     "/sync/set/",
-    ["scene", "notifications", "initiative", "widgets", "maps", "quests"]
+    ["scene", "notifications", "initiative", "widgets", "maps", "quests", "resources"]
   );
   const [muted, setMuted] = useState(true);
 
@@ -57,7 +57,7 @@ export default function Scene() {
       <div className={`min-h-screen min-w-screen flex items-center justify-center ${data.noBlur ? "" : "backdrop-blur-xs"}`}>
         <Audio muted={muted} setMuted={setMuted} sounds={data.sounds} />
         {data.active === "initiative" && initiativeData && (
-          <InitiativeWidget initiative={initiativeData} />
+          <InitiativeWidget initiative={initiativeData} resources={resourcesData?.items || []} />
         )}
         {data.active === "image" && data.activeImage && (
           <img
@@ -315,9 +315,40 @@ function getInitials(name) {
     .slice(0, 2);
 }
 
-function InitiativeWidget({ initiative }) {
+function hpEmoji(current, max) {
+  if (current == null || max == null || max <= 0) return null;
+  if (current <= 0) return "💀";
+  const pct = current / max;
+  if (pct < 0.25) return "🩸";
+  if (pct < 0.50) return "🤕";
+  if (pct < 0.75) return "😟";
+  return "💚";
+}
+
+function InitiativeWidget({ initiative, resources }) {
   const { participants = [], currentTurnId, round } = initiative;
   const sorted = [...participants].sort((a, b) => b.initiative - a.initiative);
+
+  const getHpResource = (characterId) =>
+    resources.find((r) => r.characterId === characterId && r.name === "Здоровье");
+
+  const displayName = (p) => {
+    if (p.hideName) {
+      if (p.type === "enemy") return `Враг №${p.enemyNumber}`;
+      if (p.type === "ally") return `Союзник №${p.allyNumber}`;
+    }
+    if (p.type === "enemy") return `${p.name} №${p.enemyNumber}`;
+    return p.name;
+  };
+
+  const getHp = (p) => {
+    if (p.type === "player" && p.characterId) {
+      const r = getHpResource(p.characterId);
+      return r ? { current: r.value, max: r.max } : null;
+    }
+    if (p.hp != null || p.maxHp != null) return { current: p.hp, max: p.maxHp };
+    return null;
+  };
 
   return (
     <div className="bg-black/60 backdrop-blur-md rounded-2xl p-[2vw] w-[50vw] text-white space-y-2" style={{ fontSize: "1.6vw" }}>
@@ -327,23 +358,18 @@ function InitiativeWidget({ initiative }) {
       </div>
       {sorted.map((p) => {
         const isCurrent = p.id === currentTurnId;
-        const bg =
-          p.type === "enemy"
-            ? "#c2410c"
-            : p.type === "ally"
-            ? "#22c55e"
-            : p.color || "#6366f1";
-        const label =
-          p.type === "enemy" ? String(p.enemyNumber || "") : getInitials(p.name);
+        const bg = p.type === "enemy" ? "#c2410c" : p.type === "ally" ? "#22c55e" : p.color || "#6366f1";
+        const label = p.type === "enemy"
+          ? String(p.enemyNumber || "")
+          : p.type === "ally"
+          ? String(p.allyNumber || "")
+          : getInitials(p.name);
+        const hp = getHp(p);
         return (
           <div
             key={p.id}
             className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition ${
-              p.able === false
-                ? "opacity-35"
-                : isCurrent
-                ? "bg-yellow-500/30 ring-1 ring-yellow-400/50"
-                : ""
+              p.able === false ? "opacity-35" : isCurrent ? "bg-yellow-500/30 ring-1 ring-yellow-400/50" : ""
             }`}
             style={{ fontSize: "1.4vw" }}
           >
@@ -355,9 +381,16 @@ function InitiativeWidget({ initiative }) {
               {label}
             </div>
             <span className={`flex-1 ${isCurrent ? "text-yellow-200 font-semibold" : "text-white/80"}`}>
-              {p.type === "enemy" ? `${p.name} №${p.enemyNumber}` : p.name}
+              {displayName(p)}
             </span>
-            <span className="text-white/40" style={{ fontSize: "1.2vw" }}>{p.initiative}</span>
+            {hp && (
+              <span className="text-white/60 flex-shrink-0" style={{ fontSize: "1.2vw" }}>
+                {p.hideHp
+                  ? hpEmoji(hp.current, hp.max)
+                  : `${hp.current ?? "?"}/${hp.max ?? "?"}`}
+              </span>
+            )}
+            <span className="text-white/40 flex-shrink-0" style={{ fontSize: "1.2vw" }}>{p.initiative}</span>
           </div>
         );
       })}
