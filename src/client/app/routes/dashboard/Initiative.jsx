@@ -110,8 +110,8 @@ export default function Initiative() {
         able: true,
         enemyNumber: nextEnemyNum(),
         allyNumber: null,
-        hideName: false,
-        hideHp: false,
+        hideName: form.hideName,
+        hideHp: form.hideHp,
         hp: maxHp,
         maxHp,
       }],
@@ -477,6 +477,18 @@ export default function Initiative() {
               </div>
             )}
 
+            {/* Общие флаги для монстров и ручного добавления */}
+            <div className="flex gap-4 pt-1">
+              <label className="flex items-center gap-1.5 text-xs cursor-pointer text-white/70">
+                <input type="checkbox" checked={form.hideName} onChange={(e) => setForm((f) => ({ ...f, hideName: e.target.checked }))} className="w-3 h-3" />
+                Скрыть имя
+              </label>
+              <label className="flex items-center gap-1.5 text-xs cursor-pointer text-white/70">
+                <input type="checkbox" checked={form.hideHp} onChange={(e) => setForm((f) => ({ ...f, hideHp: e.target.checked }))} className="w-3 h-3" />
+                Скрыть ХП
+              </label>
+            </div>
+
             {/* Монстры из библиотеки */}
             {monsters.length > 0 && (
               <div className="space-y-2">
@@ -557,16 +569,6 @@ export default function Initiative() {
                   {form.isEnemy ? "Враг" : "Союзник"}
                 </span>
               </label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-1.5 text-xs cursor-pointer text-white/70">
-                  <input type="checkbox" checked={form.hideName} onChange={(e) => setForm((f) => ({ ...f, hideName: e.target.checked }))} className="w-3 h-3" />
-                  Скрыть имя
-                </label>
-                <label className="flex items-center gap-1.5 text-xs cursor-pointer text-white/70">
-                  <input type="checkbox" checked={form.hideHp} onChange={(e) => setForm((f) => ({ ...f, hideHp: e.target.checked }))} className="w-3 h-3" />
-                  Скрыть ХП
-                </label>
-              </div>
               <button
                 onClick={addFromForm}
                 disabled={!form.name.trim()}

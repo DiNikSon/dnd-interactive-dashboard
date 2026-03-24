@@ -71,12 +71,13 @@ export default function Resources() {
   };
 
   const handleRest = (restType) => {
+    const label = RECOVERY_TYPES.find(t => t.key === restType)?.label || restType;
+    if (!confirm(`${label}?`)) return;
     save(resources.map(r => {
       if (r.characterId !== selectedCharId) return r;
       const newVal = applyRecovery(r, restType);
       return newVal !== null ? { ...r, value: newVal } : r;
     }));
-    const label = RECOVERY_TYPES.find(t => t.key === restType)?.label || restType;
     const charName = selectedChar?.name || "";
     const sceneQueue = Array.isArray(notifications?.scene) ? notifications.scene : notifications?.scene ? [notifications.scene] : [];
     setNotifications({

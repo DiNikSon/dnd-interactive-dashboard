@@ -499,6 +499,8 @@ function ResourcesTab({ charId, resourcesData, setResourcesData }) {
   };
 
   const handleRest = (restType) => {
+    const label = restType === "short_rest" ? "Короткий отдых" : "Длинный отдых";
+    if (!confirm(`${label}?`)) return;
     const newItems = allItems.map(r => {
       if (r.characterId !== charId) return r;
       const newVal = applyRecovery(r, restType);
