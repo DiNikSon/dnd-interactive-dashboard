@@ -152,6 +152,22 @@ export function NumericalControl({ resource: r, onChange, onSetValue, compact })
 
 export function TallyControl({ resource: r, onChange, onSetValue, compact }) {
   const size = compact ? "w-4 h-4 text-[10px]" : "w-5 h-5 text-xs";
+
+  if (r.max === 1) {
+    const checked = r.value >= 1;
+    const cbSize = compact ? "w-4 h-4" : "w-5 h-5";
+    return (
+      <button
+        onClick={() => onSetValue?.(r.id, checked ? 0 : 1)}
+        className={`${cbSize} rounded-full flex-shrink-0 transition border ${
+          checked
+            ? "bg-indigo-500 border-indigo-400 hover:bg-indigo-400"
+            : "bg-white/10 border-white/20 hover:bg-white/20"
+        }`}
+      />
+    );
+  }
+
   return (
     <div className="flex items-center gap-1.5 min-w-0">
       <button
