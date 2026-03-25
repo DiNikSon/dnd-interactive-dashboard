@@ -100,20 +100,21 @@ export default function Initiative() {
   const addFromMonster = (monster) => {
     const bonus = dexMod(monster.dex || 10);
     const maxHp = rollDice(monster.hp || "1");
+    const isEnemy = form.isEnemy;
     saveInitiative({
       participants: [...participants, {
         id: generateUUID(),
         name: monster.name,
         initiativeBonus: bonus,
         initiative: 10 + bonus,
-        type: "enemy",
+        type: isEnemy ? "enemy" : "ally",
         characterId: null,
         monsterId: monster.id,
         color: null,
         inBattle: true,
         able: true,
-        enemyNumber: nextEnemyNum(),
-        allyNumber: null,
+        enemyNumber: isEnemy ? nextEnemyNum() : null,
+        allyNumber: !isEnemy ? nextAllyNum() : null,
         hideName: form.hideName,
         hideHp: form.hideHp,
         hp: maxHp,
@@ -498,13 +499,17 @@ export default function Initiative() {
             )}
 
             {/* Общие флаги для монстров и ручного добавления */}
-            <div className="flex gap-4 pt-1">
+            <div className="flex gap-3 flex-wrap">
+              <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                <input type="checkbox" checked={form.isEnemy} onChange={(e) => setForm((f) => ({ ...f, isEnemy: e.target.checked }))} className="w-3.5 h-3.5 accent-red-500" />
+                <span className={form.isEnemy ? "text-red-400" : "text-green-400"}>{form.isEnemy ? "Враг" : "Союзник"}</span>
+              </label>
               <label className="flex items-center gap-1.5 text-xs cursor-pointer text-white/70">
-                <input type="checkbox" checked={form.hideName} onChange={(e) => setForm((f) => ({ ...f, hideName: e.target.checked }))} className="w-3 h-3" />
+                <input type="checkbox" checked={form.hideName} onChange={(e) => setForm((f) => ({ ...f, hideName: e.target.checked }))} className="w-3.5 h-3.5" />
                 Скрыть имя
               </label>
               <label className="flex items-center gap-1.5 text-xs cursor-pointer text-white/70">
-                <input type="checkbox" checked={form.hideHp} onChange={(e) => setForm((f) => ({ ...f, hideHp: e.target.checked }))} className="w-3 h-3" />
+                <input type="checkbox" checked={form.hideHp} onChange={(e) => setForm((f) => ({ ...f, hideHp: e.target.checked }))} className="w-3.5 h-3.5" />
                 Скрыть ХП
               </label>
             </div>
@@ -590,17 +595,6 @@ export default function Initiative() {
                   />
                 </div>
               </div>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.isEnemy}
-                  onChange={(e) => setForm((f) => ({ ...f, isEnemy: e.target.checked }))}
-                  className="w-4 h-4 accent-red-500"
-                />
-                <span className={form.isEnemy ? "text-red-400" : "text-green-400"}>
-                  {form.isEnemy ? "Враг" : "Союзник"}
-                </span>
-              </label>
               <button
                 onClick={addFromForm}
                 disabled={!form.name.trim()}
