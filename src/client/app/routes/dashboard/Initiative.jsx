@@ -433,21 +433,16 @@ export default function Initiative() {
                 <input
                   type="number"
                   value={p.initiative}
-                  disabled={inCombat}
                   onChange={(e) => updateInitiative(p.id, e.target.value)}
-                  className="w-14 px-2 py-1 bg-white/10 rounded border border-white/20 text-sm text-center outline-none disabled:opacity-50"
+                  className="w-14 px-2 py-1 bg-white/10 rounded border border-white/20 text-sm text-center outline-none"
                 />
 
                 <label className="flex items-center gap-1 text-xs cursor-pointer" title="Дееспособен">
                   <input type="checkbox" checked={isAble} onChange={() => toggleAble(p.id)} className="w-3.5 h-3.5 accent-green-400" />
                 </label>
 
-                {!inCombat && (
-                  <>
-                    <button onClick={() => rollOne(p.id, p.initiativeBonus)} className="text-xs px-2 py-1 bg-yellow-600/50 hover:bg-yellow-600/80 rounded" title="Бросить кубик">🎲</button>
-                    <button onClick={() => removeParticipant(p.id)} className="text-xs px-2 py-1 bg-white/10 hover:text-red-400 rounded">✕</button>
-                  </>
-                )}
+                <button onClick={() => rollOne(p.id, p.initiativeBonus)} className="text-xs px-2 py-1 bg-yellow-600/50 hover:bg-yellow-600/80 rounded" title="Бросить кубик">🎲</button>
+                <button onClick={() => removeParticipant(p.id)} className="text-xs px-2 py-1 bg-white/10 hover:text-red-400 rounded">✕</button>
               </div>
             );
           })}
@@ -456,8 +451,7 @@ export default function Initiative() {
         {/* ===========================
             Панель добавления
         =========================== */}
-        {!inCombat && (
-          <div className="space-y-4 w-64">
+        <div className="space-y-4 w-64">
             {/* Игроки */}
             {availableChars.length > 0 && (
               <div className="space-y-2">
@@ -578,7 +572,6 @@ export default function Initiative() {
               </button>
             </div>
           </div>
-        )}
       </div>
     </div>
   );
