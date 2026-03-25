@@ -39,7 +39,7 @@ export default function Initiative() {
   const monsters = monstersData?.items || [];
   const resources = resourcesData?.items || [];
 
-  const [form, setForm] = useState({ name: "", bonus: 0, hp: "", count: 1, isEnemy: true, hideName: false, hideHp: false });
+  const [form, setForm] = useState({ name: "", bonus: 0, hp: "", ac: "", count: 1, isEnemy: true, hideName: false, hideHp: false });
   const [monsterSearch, setMonsterSearch] = useState("");
 
   const saveInitiative = (patch) =>
@@ -70,6 +70,7 @@ export default function Initiative() {
     let maxEnemyNum = participants.filter((p) => p.type === "enemy").reduce((m, p) => Math.max(m, p.enemyNumber || 0), 0);
     let maxAllyNum = participants.filter((p) => p.type === "ally").reduce((m, p) => Math.max(m, p.allyNumber || 0), 0);
 
+    const ac = form.ac !== "" ? parseInt(form.ac) || null : null;
     for (let i = 0; i < count; i++) {
       newOnes.push({
         id: generateUUID(),
@@ -87,10 +88,11 @@ export default function Initiative() {
         hideHp: form.hideHp,
         hp,
         maxHp: hp,
+        ac,
       });
     }
     saveInitiative({ participants: [...participants, ...newOnes] });
-    setForm({ name: "", bonus: 0, hp: "", count: 1, isEnemy: true, hideName: false, hideHp: false });
+    setForm({ name: "", bonus: 0, hp: "", ac: "", count: 1, isEnemy: true, hideName: false, hideHp: false });
   };
 
   const addFromMonster = (monster) => {
@@ -114,6 +116,7 @@ export default function Initiative() {
         hideHp: form.hideHp,
         hp: maxHp,
         maxHp,
+        ac: monster.ac || null,
       }],
     });
   };
@@ -155,6 +158,7 @@ export default function Initiative() {
         hideHp: false,
         hp: null,
         maxHp: null,
+        ac: char.ac || null,
       }],
     });
   };
@@ -414,6 +418,10 @@ export default function Initiative() {
 
                 <HpDisplay p={p} />
 
+                {p.ac != null && (
+                  <span className="text-xs text-white/50 flex-shrink-0" title="Класс брони">🛡{p.ac}</span>
+                )}
+
                 {/* Кнопки скрытия */}
                 <div className="flex gap-1 flex-shrink-0">
                   {p.type !== "player" && (
@@ -542,15 +550,27 @@ export default function Initiative() {
                   />
                 </div>
               </div>
-              <div>
-                <label className="text-xs text-white/50 block mb-1">Здоровье</label>
-                <input
-                  type="number"
-                  placeholder="Оставить пустым = нет ХП"
-                  value={form.hp}
-                  onChange={(e) => setForm((f) => ({ ...f, hp: e.target.value }))}
-                  className="w-full px-2 py-1.5 bg-white/10 rounded border border-white/20 outline-none text-sm"
-                />
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="text-xs text-white/50 block mb-1">Здоровье</label>
+                  <input
+                    type="number"
+                    placeholder="нет ХП"
+                    value={form.hp}
+                    onChange={(e) => setForm((f) => ({ ...f, hp: e.target.value }))}
+                    className="w-full px-2 py-1.5 bg-white/10 rounded border border-white/20 outline-none text-sm"
+                  />
+                </div>
+                <div className="w-20">
+                  <label className="text-xs text-white/50 block mb-1">КБ</label>
+                  <input
+                    type="number"
+                    placeholder="—"
+                    value={form.ac}
+                    onChange={(e) => setForm((f) => ({ ...f, ac: e.target.value }))}
+                    className="w-full px-2 py-1.5 bg-white/10 rounded border border-white/20 outline-none text-sm"
+                  />
+                </div>
               </div>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input

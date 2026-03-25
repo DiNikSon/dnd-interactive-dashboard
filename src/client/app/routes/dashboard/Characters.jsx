@@ -22,7 +22,7 @@ export default function Characters() {
   const characters = charsData?.list || [];
 
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ name: "", initiative: 0, color: COLORS[0], maxHp: "" });
+  const [form, setForm] = useState({ name: "", initiative: 0, color: COLORS[0], maxHp: "", ac: "" });
 
   const saveChars = (newList) => setCharsData({ list: newList });
 
@@ -31,13 +31,13 @@ export default function Characters() {
   // ===========================
   const startCreate = () => {
     setEditingId("new");
-    setForm({ name: "", initiative: 0, color: COLORS[characters.length % COLORS.length], maxHp: "" });
+    setForm({ name: "", initiative: 0, color: COLORS[characters.length % COLORS.length], maxHp: "", ac: "" });
   };
 
   const startEdit = (char) => {
     setEditingId(char.id);
     const hpRes = (resourcesData?.items || []).find(r => r.characterId === char.id && r.name === "Здоровье");
-    setForm({ name: char.name, initiative: char.initiative, color: char.color, maxHp: hpRes?.max ?? "" });
+    setForm({ name: char.name, initiative: char.initiative, color: char.color, maxHp: hpRes?.max ?? "", ac: char.ac ?? "" });
   };
 
   const cancelEdit = () => setEditingId(null);
@@ -53,6 +53,7 @@ export default function Characters() {
           name: form.name.trim(),
           initiative: Number(form.initiative),
           color: form.color,
+          ac: form.ac !== "" ? parseInt(form.ac) || null : null,
           playerId: null,
           enabled: true,
         },
@@ -79,7 +80,7 @@ export default function Characters() {
       saveChars(
         characters.map((c) =>
           c.id === editingId
-            ? { ...c, name: form.name.trim(), initiative: Number(form.initiative), color: form.color }
+            ? { ...c, name: form.name.trim(), initiative: Number(form.initiative), color: form.color, ac: form.ac !== "" ? parseInt(form.ac) || null : null }
             : c
         )
       );
@@ -164,6 +165,16 @@ export default function Characters() {
                 className="w-24 px-3 py-1.5 bg-white/10 rounded border border-white/20 outline-none text-sm"
               />
             </div>
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-white/70">Класс брони</label>
+              <input
+                type="number"
+                placeholder="—"
+                value={form.ac}
+                onChange={(e) => setForm((f) => ({ ...f, ac: e.target.value }))}
+                className="w-20 px-3 py-1.5 bg-white/10 rounded border border-white/20 outline-none text-sm"
+              />
+            </div>
             <div className="flex items-center gap-2 flex-wrap">
               <label className="text-sm text-white/70">Цвет</label>
               {COLORS.map((c) => (
@@ -214,12 +225,15 @@ export default function Characters() {
                 style={{ backgroundColor: char.color }}
               />
 
-              {/* Имя + инициатива */}
+              {/* Имя + инициатива + КБ */}
               <div className="flex-1 min-w-0">
                 <span className="font-medium">{char.name}</span>
                 <span className="text-white/50 text-sm ml-2">
                   инициатива: {char.initiative}
                 </span>
+                {char.ac != null && (
+                  <span className="text-white/40 text-sm ml-2">КБ: {char.ac}</span>
+                )}
               </div>
 
               {/* Статус */}
