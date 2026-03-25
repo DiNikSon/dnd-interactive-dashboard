@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useOutletContext } from "react-router";
 import useLPSync from "@/hooks/useLPSync";
 import { generateUUID } from "@/utils/uuid.js";
+import { MonsterCard } from "./Monsters.jsx";
 
 function getInitials(name) {
   return name.trim().split(/\s+/).map((w) => w[0]).join("").toUpperCase().slice(0, 2);
@@ -41,6 +42,7 @@ export default function Initiative() {
 
   const [form, setForm] = useState({ name: "", bonus: 0, hp: "", ac: "", count: 1, isEnemy: true, hideName: false, hideHp: false });
   const [monsterSearch, setMonsterSearch] = useState("");
+  const [expandedId, setExpandedId] = useState(null);
 
   const saveInitiative = (patch) =>
     setInitiativeData((prev) => ({ ...prev, ...patch }));
@@ -388,6 +390,8 @@ export default function Initiative() {
           {sortedParticipants.map((p) => {
             const isCurrent = p.id === currentTurnId;
             const isAble = p.able !== false;
+            const isExpanded = expandedId === p.id;
+            const monsterData = p.monsterId ? monsters.find(m => m.id === p.monsterId) : null;
             const dashboardName = p.type === "enemy"
               ? `${p.name} №${p.enemyNumber}`
               : p.type === "ally" && p.allyNumber
@@ -396,7 +400,7 @@ export default function Initiative() {
             return (
               <div
                 key={p.id}
-                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition ${
+                className={`rounded-xl border transition ${
                   !isAble
                     ? "opacity-40 bg-white/5 border-white/5"
                     : isCurrent
@@ -404,53 +408,67 @@ export default function Initiative() {
                     : "bg-white/8 border-white/10"
                 }`}
               >
-                {isCurrent && <span className="text-yellow-400 text-sm">▶</span>}
-                <Avatar p={p} />
+                <div className="flex items-center gap-3 px-4 py-2.5">
+                  {isCurrent && <span className="text-yellow-400 text-sm">▶</span>}
+                  <Avatar p={p} />
 
-                <div className="flex-1 min-w-0">
-                  <span className="font-medium text-sm">{dashboardName}</span>
-                  {p.hideName && <span className="ml-1 text-orange-400/70 text-xs" title="Имя скрыто на сцене">👁</span>}
-                  <span className="text-white/40 text-xs ml-2">
-                    {p.type === "player" ? "игрок" : p.type === "ally" ? "союзник" : "враг"}
-                    {p.initiativeBonus !== 0 && ` (${p.initiativeBonus > 0 ? "+" : ""}${p.initiativeBonus})`}
-                  </span>
-                </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium text-sm">{dashboardName}</span>
+                    {p.hideName && <span className="ml-1 text-orange-400/70 text-xs" title="Имя скрыто на сцене">👁</span>}
+                    <span className="text-white/40 text-xs ml-2">
+                      {p.type === "player" ? "игрок" : p.type === "ally" ? "союзник" : "враг"}
+                      {p.initiativeBonus !== 0 && ` (${p.initiativeBonus > 0 ? "+" : ""}${p.initiativeBonus})`}
+                    </span>
+                  </div>
 
-                <HpDisplay p={p} />
+                  <HpDisplay p={p} />
 
-                {p.ac != null && (
-                  <span className="text-xs text-white/50 flex-shrink-0" title="Класс брони">🛡{p.ac}</span>
-                )}
-
-                {/* Кнопки скрытия */}
-                <div className="flex gap-1 flex-shrink-0">
-                  {p.type !== "player" && (
-                    <button
-                      onClick={() => toggleFlag(p.id, "hideName")}
-                      title={p.hideName ? "Показать имя" : "Скрыть имя"}
-                      className={`text-xs px-1.5 py-1 rounded transition ${p.hideName ? "bg-orange-600/60 text-white" : "bg-white/10 text-white/40 hover:text-white/70"}`}
-                    >👁</button>
+                  {p.ac != null && (
+                    <span className="text-xs text-white/50 flex-shrink-0" title="Класс брони">🛡{p.ac}</span>
                   )}
-                  <button
-                    onClick={() => toggleFlag(p.id, "hideHp")}
-                    title={p.hideHp ? "Показать ХП" : "Скрыть ХП"}
-                    className={`text-xs px-1.5 py-1 rounded transition ${p.hideHp ? "bg-orange-600/60 text-white" : "bg-white/10 text-white/40 hover:text-white/70"}`}
-                  >❤</button>
+
+                  {/* Кнопки скрытия */}
+                  <div className="flex gap-1 flex-shrink-0">
+                    {p.type !== "player" && (
+                      <button
+                        onClick={() => toggleFlag(p.id, "hideName")}
+                        title={p.hideName ? "Показать имя" : "Скрыть имя"}
+                        className={`text-xs px-1.5 py-1 rounded transition ${p.hideName ? "bg-orange-600/60 text-white" : "bg-white/10 text-white/40 hover:text-white/70"}`}
+                      >👁</button>
+                    )}
+                    <button
+                      onClick={() => toggleFlag(p.id, "hideHp")}
+                      title={p.hideHp ? "Показать ХП" : "Скрыть ХП"}
+                      className={`text-xs px-1.5 py-1 rounded transition ${p.hideHp ? "bg-orange-600/60 text-white" : "bg-white/10 text-white/40 hover:text-white/70"}`}
+                    >❤</button>
+                  </div>
+
+                  <input
+                    type="number"
+                    value={p.initiative}
+                    onChange={(e) => updateInitiative(p.id, e.target.value)}
+                    className="w-14 px-2 py-1 bg-white/10 rounded border border-white/20 text-sm text-center outline-none"
+                  />
+
+                  <label className="flex items-center gap-1 text-xs cursor-pointer" title="Дееспособен">
+                    <input type="checkbox" checked={isAble} onChange={() => toggleAble(p.id)} className="w-3.5 h-3.5 accent-green-400" />
+                  </label>
+
+                  <button onClick={() => rollOne(p.id, p.initiativeBonus)} className="text-xs px-2 py-1 bg-yellow-600/50 hover:bg-yellow-600/80 rounded" title="Бросить кубик">🎲</button>
+                  {monsterData && (
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : p.id)}
+                      title={isExpanded ? "Свернуть" : "Карточка монстра"}
+                      className={`text-xs px-2 py-1 rounded transition ${isExpanded ? "bg-indigo-600/60 text-white" : "bg-white/10 text-white/50 hover:text-white/80"}`}
+                    >📋</button>
+                  )}
+                  <button onClick={() => removeParticipant(p.id)} className="text-xs px-2 py-1 bg-white/10 hover:text-red-400 rounded">✕</button>
                 </div>
-
-                <input
-                  type="number"
-                  value={p.initiative}
-                  onChange={(e) => updateInitiative(p.id, e.target.value)}
-                  className="w-14 px-2 py-1 bg-white/10 rounded border border-white/20 text-sm text-center outline-none"
-                />
-
-                <label className="flex items-center gap-1 text-xs cursor-pointer" title="Дееспособен">
-                  <input type="checkbox" checked={isAble} onChange={() => toggleAble(p.id)} className="w-3.5 h-3.5 accent-green-400" />
-                </label>
-
-                <button onClick={() => rollOne(p.id, p.initiativeBonus)} className="text-xs px-2 py-1 bg-yellow-600/50 hover:bg-yellow-600/80 rounded" title="Бросить кубик">🎲</button>
-                <button onClick={() => removeParticipant(p.id)} className="text-xs px-2 py-1 bg-white/10 hover:text-red-400 rounded">✕</button>
+                {isExpanded && monsterData && (
+                  <div className="border-t border-white/10">
+                    <MonsterCard monster={monsterData} />
+                  </div>
+                )}
               </div>
             );
           })}

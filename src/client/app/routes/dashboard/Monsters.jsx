@@ -152,7 +152,7 @@ export default function Monsters() {
   );
 }
 
-function MonsterCard({ monster: m }) {
+export function MonsterCard({ monster: m }) {
   return (
     <div className="border-t border-white/10 px-4 pb-4 pt-3">
       <div className="bg-white/5 rounded-xl overflow-hidden">
