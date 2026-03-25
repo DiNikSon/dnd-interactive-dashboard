@@ -98,6 +98,7 @@ export default function ChangeMusic() {
   };
 
   const playPlaylist = (playlist) => {
+    if (!playlist.tracks.length) return;
     setScene((prev) => ({
       ...prev,
       sounds: [
@@ -133,6 +134,7 @@ export default function ChangeMusic() {
   const getCurrentTrackInfo = () => {
     if (!music?.src) return null;
     const srcs = Array.isArray(music.src) ? music.src : [music.src];
+    if (!srcs.length) return null;
     const durations = srcs.map((url) => tracks[url] || 0);
     const totalDuration = durations.reduce((a, b) => a + b, 0);
     if (totalDuration === 0) return { index: 0, total: srcs.length, url: srcs[0] };
