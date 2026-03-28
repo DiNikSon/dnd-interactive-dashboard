@@ -82,7 +82,7 @@ export default function Scene() {
       ).length;
       return count > 0 ? <QuestListBadge count={count} /> : null;
     })()}
-    <WidgetOverlay widgets={widgets} />
+    <WidgetOverlay widgets={widgets} scene={data} />
     {data.activeQuestId && (() => {
       const q = (questsData?.items || []).find(x => x.id === data.activeQuestId);
       return q ? <QuestPopup quest={q} /> : null;

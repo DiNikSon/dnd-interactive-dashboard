@@ -26,6 +26,7 @@ const SLOT_NAMES = {
 const WIDGET_TYPES = [
   { value: "", label: "— Пусто —" },
   { value: "qr", label: "QR-код" },
+  { value: "nowplaying", label: "Текущий трек" },
 ];
 
 export default function Widgets() {
