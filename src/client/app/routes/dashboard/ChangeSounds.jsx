@@ -43,21 +43,13 @@ export default function ChangeSounds() {
     capitalize(url.split("/").pop().split(".")[0].replaceAll("-", " ").toLowerCase());
   const findSoundInScene = (src) => scene.sounds?.find((s) => s.src === src);
 
-  const updateSceneSound = (src, newData) => {
-    setScene((prev) => {
-      const updated = (prev.sounds || []).map((s) =>
-        s.src === src ? { ...s, ...newData } : s
-      );
-      return { ...prev, sounds: updated };
-    });
-  };
-
   // ===========================
   // Sound control
   // ===========================
   const addSoundToScene = (src, loop = false) => {
     const playAt = Date.now() + delay;
     const duration = sounds.find((s) => s.url === src)?.duration || 0;
+    const volume = scene.soundVolumes?.[src] ?? 1;
 
     setScene((prev) => {
       const existing = prev.sounds || [];
@@ -108,7 +100,7 @@ export default function ChangeSounds() {
             src,
             loop,
             play: playAt,
-            volume: 1,
+            volume,
           },
         ],
       };
@@ -142,8 +134,16 @@ export default function ChangeSounds() {
     }
   };
 
+  const getVolume = (url) => scene.soundVolumes?.[url] ?? 1;
+
   const changeVolume = (src, volume) => {
-    updateSceneSound(src, { volume });
+    setScene((prev) => ({
+      ...prev,
+      soundVolumes: { ...prev.soundVolumes, [src]: volume },
+      sounds: (prev.sounds || []).map((s) =>
+        s.src === src ? { ...s, volume } : s
+      ),
+    }));
   };
 
   // ===========================
@@ -368,24 +368,20 @@ export default function ChangeSounds() {
                   )}
                 </div>
 
-                {active && (
-                  <div className="mt-2">
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.01"
-                      value={active.volume}
-                      onChange={(e) =>
-                        changeVolume(url, parseFloat(e.target.value))
-                      }
-                      className="w-full"
-                    />
-                    <p className="text-xs text-white/60 text-center">
-                      Громкость: {(active.volume * 100).toFixed(0)}%
-                    </p>
-                  </div>
-                )}
+                <div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={getVolume(url)}
+                    onChange={(e) => changeVolume(url, parseFloat(e.target.value))}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-white/60 text-center">
+                    Громкость: {(getVolume(url) * 100).toFixed(0)}%
+                  </p>
+                </div>
               </div>
             );
           })}
