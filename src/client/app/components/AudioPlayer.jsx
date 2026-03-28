@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * @param {Object} props
- * @param {false|number} props.play — timestamp, с которого идёт воспроизведение, или false, если не играет
+ * @param {false|number} props.play — timestamp, с которого идёт воспроизведение, или false, если не играет.
+ *   Если timestamp в будущем (Date.now() + delay), аудио предзагружается и запускается по таймеру.
  * @param {boolean} [props.loop=false] — зацикливать ли весь список
  * @param {string|string[]} props.src — один трек или массив треков
  * @param {number|number[]|null} [props.volume=null] — громкость: null = не менять, number = одна громкость, массив = громкости по трекам
@@ -54,25 +55,6 @@ export function AudioPlayer({ play, loop = false, src, volume = null }) {
       return;
     }
 
-    const totalDuration = durations.reduce((a, b) => a + b, 0);
-    const elapsed = (Date.now() - play) / 1000;
-
-    if (!loop && elapsed >= totalDuration) {
-      audio.pause();
-      audio.currentTime = 0;
-      return;
-    }
-
-    // Определяем трек и смещение
-    let offset = elapsed % totalDuration;
-    let trackIndex = 0;
-    while (offset >= durations[trackIndex] && trackIndex < durations.length - 1) {
-      offset -= durations[trackIndex];
-      trackIndex++;
-    }
-
-    setCurrentTrackIndex(trackIndex);
-
     const startPlayback = async (index, timeOffset) => {
       try {
         audio.src = sources[index];
@@ -97,6 +79,62 @@ export function AudioPlayer({ play, loop = false, src, volume = null }) {
         console.warn("Audio play failed:", err);
       }
     };
+
+    const elapsed = (Date.now() - play) / 1000;
+
+    // Если play в будущем — предзагрузить и запустить по таймеру
+    if (elapsed < 0) {
+      const delayMs = -elapsed * 1000;
+
+      // Предзагрузка первого трека
+      audio.src = sources[0];
+      audio.load();
+
+      let trackIndex = 0;
+      let handleEnded;
+
+      const timer = setTimeout(() => {
+        setCurrentTrackIndex(0);
+
+        handleEnded = async () => {
+          let nextIndex = trackIndex + 1;
+          if (nextIndex >= sources.length) {
+            if (loop) nextIndex = 0;
+            else return;
+          }
+          trackIndex = nextIndex;
+          setCurrentTrackIndex(nextIndex);
+          await startPlayback(nextIndex, 0);
+        };
+
+        audio.addEventListener("ended", handleEnded);
+        startPlayback(0, 0);
+      }, delayMs);
+
+      return () => {
+        clearTimeout(timer);
+        audio.pause();
+        if (handleEnded) audio.removeEventListener("ended", handleEnded);
+      };
+    }
+
+    const totalDuration = durations.reduce((a, b) => a + b, 0);
+
+    if (!loop && elapsed >= totalDuration) {
+      audio.pause();
+      audio.currentTime = 0;
+      return;
+    }
+
+    // Определяем трек и смещение
+    let offset = elapsed % totalDuration;
+    let trackIndex = 0;
+    while (offset >= durations[trackIndex] && trackIndex < durations.length - 1) {
+      offset -= durations[trackIndex];
+      trackIndex++;
+    }
+
+    setCurrentTrackIndex(trackIndex);
 
     startPlayback(trackIndex, offset);
 

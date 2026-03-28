@@ -17,6 +17,12 @@ export default function ChangeMusic() {
   const [selectedPlaylistId, setSelectedPlaylistId] = useState(null);
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [now, setNow] = useState(Date.now());
+  const [showDelayHint, setShowDelayHint] = useState(false);
+  const [editingDelay, setEditingDelay] = useState(false);
+  const [delayInput, setDelayInput] = useState("");
+
+  const delay = scene.audioDelay ?? 0;
+  const handleDelayChange = (v) => setScene((prev) => ({ ...prev, audioDelay: v }));
 
   const music = scene.sounds?.find((s) => s.id === "music");
   const selectedPlaylist = playlists.find((p) => p.id === selectedPlaylistId);
@@ -112,7 +118,7 @@ export default function ChangeMusic() {
           id: "music",
           src: [...playlist.tracks],
           loop: true,
-          play: Date.now(),
+          play: Date.now() + delay,
           volume: defaultVolume,
         },
       ],
@@ -133,7 +139,7 @@ export default function ChangeMusic() {
 
   const resumeMusic = () => {
     if (!music || music.play) return;
-    updateMusic({ play: Date.now() - (music.pausedAt || 0), pausedAt: undefined });
+    updateMusic({ play: Date.now() + delay - (music.pausedAt || 0), pausedAt: undefined });
   };
 
   const getCurrentTrackInfo = () => {
@@ -185,7 +191,7 @@ export default function ChangeMusic() {
     if (!music) return;
     const srcs = Array.isArray(music.src) ? music.src : [music.src];
     const shuffled = [...srcs].sort(() => Math.random() - 0.5);
-    updateMusic({ src: shuffled, play: Date.now() });
+    updateMusic({ src: shuffled, play: Date.now() + delay });
   };
 
   // ===========================
@@ -246,7 +252,51 @@ export default function ChangeMusic() {
   // Render
   // ===========================
   return (
-    <div className="text-center space-y-6 overflow-x-hidden">
+    <div className="relative text-center space-y-6 overflow-x-hidden">
+      {/* Задержка — левый верхний угол */}
+      <div className="absolute top-0 left-0">
+        <div className="flex items-center gap-1 text-xs text-white/50">
+          <span>Задержка запуска:</span>
+          {editingDelay ? (
+            <input
+              type="number"
+              min="0"
+              max="9999"
+              value={delayInput}
+              autoFocus
+              onChange={(e) => setDelayInput(e.target.value)}
+              onBlur={() => { handleDelayChange(Math.max(0, parseInt(delayInput, 10) || 0)); setEditingDelay(false); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { handleDelayChange(Math.max(0, parseInt(delayInput, 10) || 0)); setEditingDelay(false); }
+                if (e.key === "Escape") setEditingDelay(false);
+              }}
+              className="w-14 bg-transparent border-b border-white/40 outline-none text-white/80 text-center"
+            />
+          ) : (
+            <span
+              onClick={() => { setDelayInput(String(delay)); setEditingDelay(true); }}
+              className="underline decoration-dotted cursor-pointer text-white/80 hover:text-white"
+            >
+              {delay}
+            </span>
+          )}
+          <span>мс</span>
+          <button
+            onClick={() => setShowDelayHint((v) => !v)}
+            className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center"
+          >
+            ?
+          </button>
+        </div>
+        {showDelayHint && (
+          <p className="mt-1 w-56 text-xs text-white/70 bg-black/80 rounded-lg px-2 py-1.5">
+            Звук отправляется на сервер и доходит до Сцены с задержкой сети.
+            Если музыка начинается не с начала — задай значение, равное времени
+            round-trip запроса (мс). Настройка общая для саундпада и музыки.
+          </p>
+        )}
+      </div>
+
       <h2 className="text-2xl font-semibold mb-2">Музыка</h2>
 
       {/* Активная музыка */}

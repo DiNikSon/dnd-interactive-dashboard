@@ -6,8 +6,14 @@ export default function ChangeSounds() {
   const [sounds, setSounds] = useState([]); // [{url, duration}]
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [showDelayHint, setShowDelayHint] = useState(false);
+  const [editingDelay, setEditingDelay] = useState(false);
+  const [delayInput, setDelayInput] = useState("");
   const dropRef = useRef(null);
   const timeoutsRef = useRef({});
+
+  const delay = scene.audioDelay ?? 0;
+  const handleDelayChange = (v) => setScene((prev) => ({ ...prev, audioDelay: v }));
 
   // ===========================
   // Fetch sounds
@@ -50,7 +56,7 @@ export default function ChangeSounds() {
   // Sound control
   // ===========================
   const addSoundToScene = (src, loop = false) => {
-    const now = Date.now();
+    const playAt = Date.now() + delay;
     const duration = sounds.find((s) => s.url === src)?.duration || 0;
 
     setScene((prev) => {
@@ -63,12 +69,12 @@ export default function ChangeSounds() {
         delete timeoutsRef.current[src];
       }
 
-      let remaining = duration * 1000; // по умолчанию вся длина
+      let remaining = duration * 1000 + delay; // по умолчанию вся длина + задержка доставки
 
       if (already?.pausedAt) {
         // вычисляем остаток, если был в паузе
         const elapsed = already.pausedAt;
-        remaining = Math.max(0, duration * 1000 - elapsed);
+        remaining = Math.max(0, duration * 1000 - elapsed) + delay;
       }
 
       // только если не loop и есть длительность
@@ -85,7 +91,7 @@ export default function ChangeSounds() {
             s.src === src
               ? {
                   ...s,
-                  play: now - (s.pausedAt || 0),
+                  play: playAt - (s.pausedAt || 0),
                   loop,
                   pausedAt: undefined,
                 }
@@ -101,7 +107,7 @@ export default function ChangeSounds() {
           {
             src,
             loop,
-            play: now,
+            play: playAt,
             volume: 1,
           },
         ],
@@ -211,7 +217,51 @@ export default function ChangeSounds() {
   // Render
   // ===========================
   return (
-    <div className="text-center space-y-6 overflow-x-hidden">
+    <div className="relative text-center space-y-6 overflow-x-hidden">
+      {/* Задержка — левый верхний угол */}
+      <div className="absolute top-0 left-0">
+        <div className="flex items-center gap-1 text-xs text-white/50">
+          <span>Задержка запуска:</span>
+          {editingDelay ? (
+            <input
+              type="number"
+              min="0"
+              max="9999"
+              value={delayInput}
+              autoFocus
+              onChange={(e) => setDelayInput(e.target.value)}
+              onBlur={() => { handleDelayChange(Math.max(0, parseInt(delayInput, 10) || 0)); setEditingDelay(false); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { handleDelayChange(Math.max(0, parseInt(delayInput, 10) || 0)); setEditingDelay(false); }
+                if (e.key === "Escape") setEditingDelay(false);
+              }}
+              className="w-14 bg-transparent border-b border-white/40 outline-none text-white/80 text-center"
+            />
+          ) : (
+            <span
+              onClick={() => { setDelayInput(String(delay)); setEditingDelay(true); }}
+              className="underline decoration-dotted cursor-pointer text-white/80 hover:text-white"
+            >
+              {delay}
+            </span>
+          )}
+          <span>мс</span>
+          <button
+            onClick={() => setShowDelayHint((v) => !v)}
+            className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center"
+          >
+            ?
+          </button>
+        </div>
+        {showDelayHint && (
+          <p className="mt-1 w-56 text-xs text-white/70 bg-black/80 rounded-lg px-2 py-1.5">
+            Звук отправляется на сервер и доходит до Сцены с задержкой сети.
+            Если звук начинается не с начала — задай значение, равное времени
+            round-trip запроса (мс).
+          </p>
+        )}
+      </div>
+
       <h2 className="text-2xl font-semibold mb-2">Управление звуками</h2>
 
       <p className="text-white/80">
