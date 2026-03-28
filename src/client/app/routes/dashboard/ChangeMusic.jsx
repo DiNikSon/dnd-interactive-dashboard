@@ -108,15 +108,18 @@ export default function ChangeMusic() {
     }));
   };
 
-  const playPlaylist = (playlist) => {
+  const playPlaylist = (playlist, shuffled = false) => {
     if (!playlist.tracks.length) return;
+    const tracks = shuffled
+      ? [...playlist.tracks].sort(() => Math.random() - 0.5)
+      : [...playlist.tracks];
     setScene((prev) => ({
       ...prev,
       sounds: [
         ...(prev.sounds || []).filter((s) => s.id !== "music"),
         {
           id: "music",
-          src: [...playlist.tracks],
+          src: tracks,
           loop: true,
           play: Date.now() + delay,
           volume: defaultVolume,
@@ -424,14 +427,21 @@ export default function ChangeMusic() {
                 <div className="flex gap-1 ml-2">
                   <button
                     onClick={() => playPlaylist(p)}
-                    className="text-xs px-2 py-0.5 bg-green-600/70 hover:bg-green-600 rounded"
+                    className="w-6 h-6 flex items-center justify-center text-xs bg-green-600/70 hover:bg-green-600 rounded"
                     title="Запустить"
                   >
                     ▶
                   </button>
                   <button
+                    onClick={() => playPlaylist(p, true)}
+                    className="w-6 h-6 flex items-center justify-center text-xs bg-white/20 hover:bg-white/30 rounded"
+                    title="Запустить перемешанным"
+                  >
+                    🔀
+                  </button>
+                  <button
                     onClick={() => deletePlaylist(p.id)}
-                    className="text-xs text-white/50 hover:text-red-400 px-1"
+                    className="w-6 h-6 flex items-center justify-center text-xs text-white/50 hover:text-red-400"
                   >
                     ✕
                   </button>
