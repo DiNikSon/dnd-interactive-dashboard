@@ -144,6 +144,7 @@ export function AudioPlayer({ play, loop = false, src, volume = null }) {
         if (loop) nextIndex = 0;
         else return;
       }
+      trackIndex = nextIndex;
       setCurrentTrackIndex(nextIndex);
       await startPlayback(nextIndex, 0);
     };
