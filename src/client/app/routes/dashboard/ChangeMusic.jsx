@@ -208,9 +208,7 @@ export default function ChangeMusic() {
     try {
       setIsUploading(true);
       const res = await fetch(
-        `/upload/music?name=${encodeURIComponent(
-          name.toLowerCase().replaceAll(" ", "-")
-        )}`,
+        `/upload/music?name=${encodeURIComponent(name)}`,
         { method: "POST", body: formData }
       );
       const data = await res.json();
@@ -240,10 +238,7 @@ export default function ChangeMusic() {
   // ===========================
   // Helpers
   // ===========================
-  const getNameFromUrl = (url) => {
-    const base = url.split("/").pop().split(".")[0].replaceAll("-", " ");
-    return base.charAt(0).toUpperCase() + base.slice(1).toLowerCase();
-  };
+  const getNameFromUrl = (url) => url.split("/").pop().split(".")[0];
 
   const formatDuration = (sec) => {
     const m = Math.floor(sec / 60);
