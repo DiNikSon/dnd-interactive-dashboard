@@ -20,6 +20,11 @@ export default function ChangeMusic() {
 
   const music = scene.sounds?.find((s) => s.id === "music");
   const selectedPlaylist = playlists.find((p) => p.id === selectedPlaylistId);
+  const defaultVolume = playlistsData?.defaultVolume ?? 1;
+
+  const setDefaultVolume = (value) => {
+    setPlaylistsData({ ...playlistsData, items: playlists, defaultVolume: value });
+  };
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 5000);
@@ -108,7 +113,7 @@ export default function ChangeMusic() {
           src: [...playlist.tracks],
           loop: true,
           play: Date.now(),
-          volume: music?.volume ?? 1,
+          volume: defaultVolume,
         },
       ],
     }));
@@ -335,6 +340,21 @@ export default function ChangeMusic() {
               +
             </button>
           </div>
+          <div className="mt-3 space-y-1">
+            <label className="text-xs text-white/60">
+              Громкость по умолчанию: {(defaultVolume * 100).toFixed(0)}%
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={defaultVolume}
+              onChange={(e) => setDefaultVolume(parseFloat(e.target.value))}
+              className="w-full"
+            />
+          </div>
+
           <div className="space-y-1">
             {playlists.map((p) => (
               <div
